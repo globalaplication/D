@@ -49,9 +49,16 @@ class IconViewWindow(Gtk.Window):
         self.window.set_default_size(650, 400)
         self.window.connect('destroy', Gtk.main_quit)
 
-        hb = Gtk.HeaderBar()
-        hb.set_show_close_button(True)
-        self.window.set_titlebar(hb)
+        self.hb = Gtk.HeaderBar()
+        self.hb.set_show_close_button(True)
+        self.hb.props.title = "HeaderBar example"
+        self.window.set_titlebar(self.hb)
+
+        button = Gtk.Button()
+        icon = Gio.ThemedIcon(name="folder")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button.add(image)
+        self.hb.pack_end(button)
         
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(box.get_style_context(), "linked")
@@ -68,7 +75,7 @@ class IconViewWindow(Gtk.Window):
         self.NExt.set_sensitive(False)
         self.BAck.set_sensitive(False)
 
-        hb.pack_start(box)
+        self.hb.pack_start(box)
 
         self.hbox = Gtk.HBox(spacing=11, homogeneous=False)
         self.window.add(self.hbox)
@@ -112,7 +119,10 @@ class IconViewWindow(Gtk.Window):
         index = self.iconview.get_selected_items()[0]
         gg = str(index)
         kk = int(gg)
+        print kk, 'kk'
         self.liststore.clear()
+        print fm[kk]['path']
+        print fm
         if os.path.isdir(fm[kk]['path']) is True:
             
             if fm[kk]['path'] not in nextback:
@@ -122,11 +132,14 @@ class IconViewWindow(Gtk.Window):
 
             select_item_value = fm[kk]['path']
 
+            self.hb.props.title = select_item_value
+
             if len(nextback) > 0 : self.BAck.set_sensitive(True)
 
             folder(fm[kk]['path'])
 
             ic = [ic for ic in fm.keys()]
+
             for ic in ic:
                 try:
                     pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 64, 0)
@@ -143,9 +156,12 @@ class IconViewWindow(Gtk.Window):
             self.liststore.clear()
             folder(nextback[nextback.index(select_item_value)+1])
             select_item_value = nextback[nextback.index(select_item_value)+1]
+            self.hb.props.title = select_item_value
             if nextback.index(select_item_value) is 0: self.BAck.set_sensitive(False)
             if nextback.index(select_item_value) is len(nextback)-1: 
                 self.NExt.set_sensitive(False)
+            if nextback.index(select_item_value) > 0: 
+                self.BAck.set_sensitive(True)
             ic = [ic for ic in fm.keys()]
             for ic in ic:
                 try:
@@ -159,6 +175,7 @@ class IconViewWindow(Gtk.Window):
             self.liststore.clear()
             folder(nextback[nextback.index(select_item_value)-1])
             select_item_value = nextback[nextback.index(select_item_value)-1]
+            self.hb.props.title = select_item_value
             if nextback.index(select_item_value) is 0: self.BAck.set_sensitive(False)
             if nextback.index(select_item_value) < len(nextback)-1: 
                 self.NExt.set_sensitive(True)
@@ -172,5 +189,6 @@ class IconViewWindow(Gtk.Window):
 def main(beta=None):
     IconViewWindow(beta)
     Gtk.main()
+
 if __name__ == '__main__':
     main()
