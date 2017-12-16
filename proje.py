@@ -6,7 +6,7 @@ import os
 
 HOME = os.environ['HOME']
 
-nextback = []
+nextback = ['/home']
 fm = {}
 pdict = {}
 
@@ -62,13 +62,17 @@ class IconViewWindow(Gtk.Window):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(box.get_style_context(), "linked")
 
-        button = Gtk.Button()
-        button.add(Gtk.Arrow(Gtk.ArrowType.LEFT, Gtk.ShadowType.NONE))
-        box.add(button)
+        self.BAck = Gtk.Button()
+        self.BAck.add(Gtk.Arrow(Gtk.ArrowType.LEFT, Gtk.ShadowType.NONE))
+        box.add(self.BAck)
 
-        button = Gtk.Button()
-        button.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
-        box.add(button)
+        self.NExt = Gtk.Button()
+        self.NExt.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
+        box.add(self.NExt)
+
+
+        self.NExt.set_sensitive(False)
+        self.BAck.set_sensitive(False)
 
         hb.pack_start(box)
 
@@ -104,20 +108,30 @@ class IconViewWindow(Gtk.Window):
         self.iconview.connect('item-activated', self.item_activated, self.liststore) #button-press-event
         self.iconview.grab_focus()
 
+        self.NExt.connect('button-press-event', self.connect_NExt, self.liststore) 
+        self.BAck.connect('button-press-event', self.connect_BAck, self.liststore) 
+
         self.window.show_all()
 
-
     def item_activated(self, iconview, tree_path, liststore):
+        global select_item_value
         index = self.iconview.get_selected_items()[0]
         gg = str(index)
         kk = int(gg)
-        print -1,type(kk), fm[kk]['path']
-
+        self.liststore.clear()
         if os.path.isdir(fm[kk]['path']) is True:
-            nextback.append(fm[kk]['path'])
+            
+            if fm[kk]['path'] not in nextback:
+                nextback.append(fm[kk]['path'])
+
             print nextback
-            self.liststore.clear()
+
+            select_item_value = fm[kk]['path']
+
+            if len(nextback) > 0 : self.BAck.set_sensitive(True)
+
             folder(fm[kk]['path'])
+
             ic = [ic for ic in fm.keys()]
             for ic in ic:
                 try:
@@ -126,13 +140,43 @@ class IconViewWindow(Gtk.Window):
                 except:
                     pass
         else:
-            eval(fm[kk]['path'])
-     
-                
+            #eval(fm[kk]['path'])
+            print ('ha ne oluyor')
+
+    def connect_NExt(self, iconview, tree_path, liststore):
+        global select_item_value
+        if os.path.isdir(nextback[nextback.index(select_item_value)+1]) is True:
+            self.liststore.clear()
+            folder(nextback[nextback.index(select_item_value)+1])
+            select_item_value = nextback[nextback.index(select_item_value)+1]
+            if nextback.index(select_item_value) is 0: self.BAck.set_sensitive(False)
+            if nextback.index(select_item_value) is len(nextback)-1: 
+                self.NExt.set_sensitive(False)
+            ic = [ic for ic in fm.keys()]
+            for ic in ic:
+                try:
+                    pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 64, 0)
+                    self.liststore.append([pixbuf, fm[ic]['label']])
+                except:
+                    pass
+    def connect_BAck(self, iconview, tree_path, liststore):
+        global select_item_value
+        if os.path.isdir(nextback[nextback.index(select_item_value)-1]) is True:
+            self.liststore.clear()
+            folder(nextback[nextback.index(select_item_value)-1])
+            select_item_value = nextback[nextback.index(select_item_value)-1]
+            if nextback.index(select_item_value) is 0: self.BAck.set_sensitive(False)
+            if nextback.index(select_item_value) < len(nextback)-1: 
+                self.NExt.set_sensitive(True)
+            ic = [ic for ic in fm.keys()]
+            for ic in ic:
+                try:
+                    pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 64, 0)
+                    self.liststore.append([pixbuf, fm[ic]['label']])
+                except:
+                    pass
 def main(beta=None):
     IconViewWindow(beta)
     Gtk.main()
-
 if __name__ == '__main__':
     main()
-
