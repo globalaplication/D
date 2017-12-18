@@ -4,6 +4,7 @@ import gi, os
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, Gdk
 from gi.repository import GdkPixbuf, GLib
+import subprocess
 
 class BetaFileManager(Gtk.Window):
 
@@ -13,6 +14,7 @@ class BetaFileManager(Gtk.Window):
     Path = '/home'
     IconWidth = 70
     ArrayNextBack, CountNextBack = [Path], 1
+    state = False
 
     def __init__(self, BetaApp):
 
@@ -25,13 +27,16 @@ class BetaFileManager(Gtk.Window):
         self.Headerbar.props.title = self.Path
         self.window.set_titlebar(self.Headerbar)
         #sağ taraf buton
-        button = Gtk.Button()
-        icon = Gio.ThemedIcon(name="document-save-symbolic")
+        self.ToggleButton = Gtk.ToggleButton()
+        icon = Gio.ThemedIcon(name="gtk-help")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        button.add(image)
-        self.Headerbar.pack_end(button)
+        self.ToggleButton.add(image)
+        self.Headerbar.pack_end(self.ToggleButton)
         #sağ taraf dosya arama
         self.entrysearch = Gtk.Entry()
+        self.entrysearch.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,
+            'system-search-symbolic')
+        self.entrysearch.connect("changed", self.haha)
         self.Headerbar.pack_end(self.entrysearch)
         #Sol tarfataki butonlar
         self.HeaderBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -43,8 +48,6 @@ class BetaFileManager(Gtk.Window):
         self.Ileri.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
         self.HeaderBox.add(self.Ileri)
         self.Headerbar.pack_start(self.HeaderBox)
-        #hederbar toogle
-
 
         #formbox
         self.FormBox = Gtk.VBox()
@@ -78,15 +81,14 @@ class BetaFileManager(Gtk.Window):
 
         self.up_button = up_button
         self.home_button = home_button
-        # we now set which model columns that correspond to the text
-        # and pixbuf of each item
+
         IconView.set_text_column(self.FILENAME)
         IconView.set_pixbuf_column(self.FILEICON)
         IconView.set_item_width(self.IconWidth)
         IconView.grab_focus()
 
-        # connect to the "item-activated" signal
         IconView.connect('item-activated', self.double_click, IconViewStore)
+        self.ToggleButton.connect("toggled", self.on_button_toggled,IconViewStore, '1')
         self.Geri.connect('button-press-event', self.connect_FileBack, IconViewStore) 
         self.Ileri.connect('button-press-event', self.connect_FileNext, IconViewStore) 
     
@@ -95,6 +97,17 @@ class BetaFileManager(Gtk.Window):
 
         self.window.show_all()
 
+    def haha(self, entrysearch):
+        print  self.entrysearch.get_text()
+    def on_button_toggled(self, ToggleButton, IconViewStore, name):
+        if self.ToggleButton.get_active():
+            self.state = True
+            IconViewStore.clear()
+            self.Load(IconViewStore)
+        else:
+            self.state = False
+            IconViewStore.clear()
+            self.Load(IconViewStore)
     def connect_FileBack(self, IconView, path, IconViewStore):
         if self.CountNextBack > 1: self.CountNextBack = self.CountNextBack - 1
         if self.CountNextBack is 1 :             
@@ -130,23 +143,26 @@ class BetaFileManager(Gtk.Window):
     def double_click(self, IconView, tree_path, IconViewStore):
         iter_ = IconViewStore.get_iter(tree_path)
         (path, is_dir) = IconViewStore.get(iter_, self.COL_PATH, self.COL_IS_DIRECTORY)
-        print path, is_dir
         if (is_dir is True) : 
             self.ArrayNextBack.insert(self.CountNextBack, path)
             self.CountNextBack = self.CountNextBack + 1
+        else:
+            subprocess.call(('xdg-open', path))
         if not is_dir:
             return
         self.Path = path
         self.Headerbar.props.title = self.Path
         IconViewStore.clear()
         self.Load(IconViewStore)
-        self.up_button.set_sensitive(True)
 
+        self.up_button.set_sensitive(True)
         if len(self.ArrayNextBack) > 1:
             self.Geri.set_sensitive(True
                 )
     def Load(self, IconViewStore):
         for FileName in os.listdir(self.Path):
+            if FileName.startswith('.') is True and self.state is False:
+                continue
             IconViewStore.append(
             (os.path.join(self.Path, FileName), 
                 FileName, 
@@ -174,5 +190,6 @@ class BetaFileManager(Gtk.Window):
 def main(BetaApp=None):
     BetaFileManager(BetaApp)
     Gtk.main()
+
 if __name__ == '__main__':
     main()
