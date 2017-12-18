@@ -10,9 +10,9 @@ class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
 
-    Path = '/home/linuxmt'
+    Path = '/home'
     IconWidth = 70
-    ArrayNextBack = []
+    ArrayNextBack, CountNextBack = [Path], 1
 
     def __init__(self, BetaApp):
 
@@ -44,6 +44,7 @@ class BetaFileManager(Gtk.Window):
         self.HeaderBox.add(self.Ileri)
         self.Headerbar.pack_start(self.HeaderBox)
         #hederbar toogle
+
 
         #formbox
         self.FormBox = Gtk.VBox()
@@ -89,20 +90,34 @@ class BetaFileManager(Gtk.Window):
         self.Geri.connect('button-press-event', self.connect_FileBack, IconViewStore) 
         self.Ileri.connect('button-press-event', self.connect_FileNext, IconViewStore) 
     
+        self.Geri.set_sensitive(False)
+        self.Ileri.set_sensitive(False)
 
         self.window.show_all()
 
-    def connect_FileBack(self, IconView, Path, IconViewStore):
-        self.ArrayNextBack.remove(self.Path)
-        print self.ArrayNextBack
-        self.Load(IconViewStore)
-        self.Path = path
-        self.Headerbar.props.title = self.Path
+    def connect_FileBack(self, IconView, path, IconViewStore):
+        if self.CountNextBack > 1: self.CountNextBack = self.CountNextBack - 1
+        if self.CountNextBack is 1 :             
+            self.Geri.set_sensitive(False
+                )
+        self.Path = self.ArrayNextBack[self.CountNextBack-1]
+        if len(self.ArrayNextBack) > self.CountNextBack:
+            self.Ileri.set_sensitive(True)
         IconViewStore.clear()
         self.Load(IconViewStore)
-
-    def connect_FileNext(self, IconView, Path, IconViewStore):
-        print 'hahahah'
+        self.Headerbar.props.title = self.Path
+    def connect_FileNext(self, IconView, path, IconViewStore):
+        self.CountNextBack = self.CountNextBack + 1
+        if self.CountNextBack is len(self.ArrayNextBack) :             
+            self.Ileri.set_sensitive(False
+                )
+        if self.CountNextBack > 1 :             
+            self.Geri.set_sensitive(True
+                )
+        self.Path = self.ArrayNextBack[self.CountNextBack-1]
+        IconViewStore.clear()
+        self.Load(IconViewStore)
+        self.Headerbar.props.title = self.Path
 
     def up_clicked(self, item, IconViewStore):
         self.Path = os.path.split(self.Path)[0]
@@ -113,25 +128,23 @@ class BetaFileManager(Gtk.Window):
         self.Load(IconViewStore)
         self.up_button.set_sensitive(True)
     def double_click(self, IconView, tree_path, IconViewStore):
-        print tree_path
         iter_ = IconViewStore.get_iter(tree_path)
         (path, is_dir) = IconViewStore.get(iter_, self.COL_PATH, self.COL_IS_DIRECTORY)
         print path, is_dir
-        if (is_dir is True) : self.ArrayNextBack.append(path)
-        print self.ArrayNextBack
+        if (is_dir is True) : 
+            self.ArrayNextBack.insert(self.CountNextBack, path)
+            self.CountNextBack = self.CountNextBack + 1
         if not is_dir:
             return
         self.Path = path
         self.Headerbar.props.title = self.Path
-
         IconViewStore.clear()
         self.Load(IconViewStore)
         self.up_button.set_sensitive(True)
 
-
-
-
-
+        if len(self.ArrayNextBack) > 1:
+            self.Geri.set_sensitive(True
+                )
     def Load(self, IconViewStore):
         for FileName in os.listdir(self.Path):
             IconViewStore.append(
@@ -158,10 +171,8 @@ class BetaFileManager(Gtk.Window):
             except GLib.GError:
                 pass
         return fileicon
-
 def main(BetaApp=None):
     BetaFileManager(BetaApp)
     Gtk.main()
-
 if __name__ == '__main__':
     main()
