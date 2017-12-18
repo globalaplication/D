@@ -1,254 +1,166 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-import gi
+import gi, os
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, Gdk
-from gi.repository.GdkPixbuf import Pixbuf
-import os
+from gi.repository import GdkPixbuf, GLib
 
-HOME = os.environ['HOME']
+class BetaFileManager(Gtk.Window):
 
-nextback = ['/home']
-fm = {}
-pdict = {}
+    (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
+        NUM_COLS) = range(5)
 
-def file_info(path):
-    f = Gio.file_new_for_path(path)
-    info = f.query_info(Gio.FILE_ATTRIBUTE_STANDARD_ICON,
-                        Gio.FileQueryInfoFlags.NONE,
-                        None)
-    gicon = info.get_icon()
-    return gicon.get_names()[0]
+    Path = '/home/linuxmt'
+    IconWidth = 70
+    ArrayNextBack = []
 
-def folder(u=HOME, h=False):
-    fm.clear()
-    f = [f for f in os.listdir(u) if f.startswith('.') is h]
-    for isdir in f:
-        fm[f.index(isdir)] = {'path':u+'/'+isdir, 'icon':file_info(u+'/'+isdir), 'label':isdir}
-    return fm
-
-def scanf(t='folder'):
-    keys = [keys for keys in fm if fm[keys]['type'] == t]
-    return keys
-
-def places():
-    with open(HOME+'/.config/user-dirs.dirs') as pla:
-        places = pla.read().splitlines()
-    places = [places.replace('"','').split('/')[-1] for places in places if places.startswith('#') is False]
-    for add in places:
-        pdict[add] = {'path':HOME+'/'+add, 'icon':'folder-music'}
-    return pdict
-
-folder('/home')
-
-#XDG_DESKTOP_DIR="$HOME/Masaüstü"  --> user-desktop
-#XDG_DOWNLOAD_DIR="$HOME/İndirilenler" folder-download
-#XDG_TEMPLATES_DIR="$HOME/Şablonlar"
-#XDG_PUBLICSHARE_DIR="$HOME/Genel"
-#XDG_DOCUMENTS_DIR="$HOME/Belgeler"
-#XDG_MUSIC_DIR="$HOME/Müzik"
-#XDG_PICTURES_DIR="$HOME/Resimler"
-#XDG_VIDEOS_DIR="$HOME/Videolar"
-
-
-print places()
-
-class IconViewWindow(Gtk.Window):
-
-    def __init__(self, beta):
+    def __init__(self, BetaApp):
 
         self.window = Gtk.Window()
-        self.window.set_border_width(0)
-        self.window.set_title('Dosya Yoneticisi')
-        self.window.set_default_size(750, 600)
+        self.window.set_default_size(650, 400)
         self.window.connect('destroy', Gtk.main_quit)
-
         #Gtk HeaderBar
-        self.hb = Gtk.HeaderBar()
-        self.hb.set_show_close_button(True)
-        #self.hb.props.title = "HeaderBar example"
-        self.window.set_titlebar(self.hb)
-
-        #Sağ taraftaki butonlar
+        self.Headerbar = Gtk.HeaderBar()
+        self.Headerbar.set_show_close_button(True)
+        self.Headerbar.props.title = self.Path
+        self.window.set_titlebar(self.Headerbar)
+        #sağ taraf buton
         button = Gtk.Button()
         icon = Gio.ThemedIcon(name="document-save-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         button.add(image)
-        self.hb.pack_end(button)
-
-        
+        self.Headerbar.pack_end(button)
+        #sağ taraf dosya arama
         self.entrysearch = Gtk.Entry()
-        self.entrysearch.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,
-            'system-search-symbolic')
-        self.entrysearch.connect("changed", self.haha)
-        self.hb.pack_end(self.entrysearch)
-        
+        self.Headerbar.pack_end(self.entrysearch)
         #Sol tarfataki butonlar
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        Gtk.StyleContext.add_class(box.get_style_context(), "linked")
+        self.HeaderBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        Gtk.StyleContext.add_class(self.HeaderBox.get_style_context(), "linked")
         self.Geri = Gtk.Button()
         self.Geri.add(Gtk.Arrow(Gtk.ArrowType.LEFT, Gtk.ShadowType.NONE))
-        box.add(self.Geri)
+        self.HeaderBox.add(self.Geri)
         self.Ileri = Gtk.Button()
         self.Ileri.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
-        box.add(self.Ileri)
-        #self.Ev = Gtk.Button()
-        #self.Ev.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
-        #box.add(self.Ev)
-        self.hb.pack_start(box)
+        self.HeaderBox.add(self.Ileri)
+        self.Headerbar.pack_start(self.HeaderBox)
+        #hederbar toogle
 
-        #iler ve geri butonları başlangıçta disabled
-        self.Ileri.set_sensitive(False)
-        self.Geri.set_sensitive(False)
-
-        self.hbox = Gtk.Box(spacing=0, homogeneous=False)
-        self.window.add(self.hbox)
-
-        self.placesstore = Gtk.ListStore(str, str)
-        self.placestitle = Gtk.TreeViewColumn('Places                                                ')
-        self.placestreeview = Gtk.TreeView(self.placesstore)
-        for addplaces in places().keys():
-            self.placesstore.append([addplaces, Gtk.STOCK_OPEN])
-        self.placestreeview.append_column(self.placestitle)
-        self.CellIcon = Gtk.CellRendererPixbuf()
-        self.CellText = Gtk.CellRendererText()
-        #self.CellIcon.set_property('cell-background', 'black')
-        #self.CellText.set_property('cell-background', 'black')
-        self.placestitle.pack_start(self.CellIcon, False)
-        self.placestitle.pack_start(self.CellText, True)
-        #places path icon
-        self.placestitle.set_attributes(self.CellIcon, stock_id=1)
-        #places path list
-        self.placestitle.set_attributes(self.CellText, text=0)
-        self.hbox.add(self.placestreeview)
-
-        sw = Gtk.ScrolledWindow()
-        sw.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
-        sw.set_policy(Gtk.PolicyType.AUTOMATIC,
+        #formbox
+        self.FormBox = Gtk.VBox()
+        self.window.add(self.FormBox)
+        #toolbar
+        self.Toolbar = Gtk.Toolbar()
+        self.FormBox.pack_start(self.Toolbar, 0, 0, 0)
+        #toolbar butonlar
+        up_button = Gtk.ToolButton(stock_id=Gtk.STOCK_GO_UP)
+        up_button.set_is_important(True)
+        up_button.set_sensitive(False)
+        self.Toolbar.insert(up_button, -1)
+        home_button = Gtk.ToolButton(stock_id=Gtk.STOCK_HOME)
+        home_button.set_is_important(True)
+        self.Toolbar.insert(home_button, -1)
+        self.ScrolledWindow = Gtk.ScrolledWindow()
+        self.ScrolledWindow.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
+        self.ScrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC,
                       Gtk.PolicyType.AUTOMATIC)
-        self.hbox.pack_start(sw, True, True, 1)
+        self.FormBox.pack_start(self.ScrolledWindow, True, True, 1)
+        #self.Path = '/home/linuxmt'
+        IconViewStore = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf, bool)
+        self.Load(IconViewStore)
 
+        IconView = Gtk.IconView(model=IconViewStore)
+        IconView.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        self.ScrolledWindow.add(IconView)
+        
+        up_button.connect('clicked', self.up_clicked, IconViewStore)
+        home_button.connect('clicked', self.home_clicked, IconViewStore)
 
-        self.liststore = Gtk.ListStore(Pixbuf, str)
-        self.iconview = Gtk.IconView(model=self.liststore)
+        self.up_button = up_button
+        self.home_button = home_button
+        # we now set which model columns that correspond to the text
+        # and pixbuf of each item
+        IconView.set_text_column(self.FILENAME)
+        IconView.set_pixbuf_column(self.FILEICON)
+        IconView.set_item_width(self.IconWidth)
+        IconView.grab_focus()
 
-        self.iconview.set_pixbuf_column(0)
-        self.iconview.set_text_column(1)
-        self.iconview.set_item_width(70)
-
-        self.iconview.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
-        sw.add(self.iconview)
-
-        ic = [ic for ic in fm.keys()]
-        for ic in ic:
-            try:
-                pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 48, 0)
-                self.liststore.append([pixbuf, fm[ic]['label']])
-            except:
-                pass
-
-        self.iconview.connect('button-press-event', self.press, self.liststore)
-        self.iconview.connect('item-activated', self.item_activated, self.liststore)
-        self.iconview.grab_focus()
-
-        self.Ileri.connect('button-press-event', self.connect_NExt, self.liststore) 
-        self.Geri.connect('button-press-event', self.connect_BAck, self.liststore) 
+        # connect to the "item-activated" signal
+        IconView.connect('item-activated', self.double_click, IconViewStore)
+        self.Geri.connect('button-press-event', self.connect_FileBack, IconViewStore) 
+        self.Ileri.connect('button-press-event', self.connect_FileNext, IconViewStore) 
+    
 
         self.window.show_all()
 
-    def haha(self, entrysearch):
-        self.liststore.clear()
-        dict = {}
-        index = [index for index in fm.keys() if fm[index]['icon'].find('text') is not -1]
-        for enum, test in enumerate(index, 0):
-            with open(fm[test]['path']) as search:
-                search = search.read()
-            if search.find(self.entrysearch.get_text()) is not -1:
-                dict[enum] = {'path':fm[test]['path'], 'icon':fm[test]['icon'], 'label':fm[test]['label']}
-        if len(self.entrysearch.get_text()) is 0:
-            ic = [ic for ic in fm.keys()]
-            for ic in ic:
-                try:
-                    pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 48, 0)
-                    self.liststore.append([pixbuf, fm[ic]['label']])
-                except:
-                    pass
-        ic = [ic for ic in dict.keys()]
-        for ic in ic:
+    def connect_FileBack(self, IconView, Path, IconViewStore):
+        self.ArrayNextBack.remove(self.Path)
+        print self.ArrayNextBack
+        self.Load(IconViewStore)
+        self.Path = path
+        self.Headerbar.props.title = self.Path
+        IconViewStore.clear()
+        self.Load(IconViewStore)
+
+    def connect_FileNext(self, IconView, Path, IconViewStore):
+        print 'hahahah'
+
+    def up_clicked(self, item, IconViewStore):
+        self.Path = os.path.split(self.Path)[0]
+        self.Load(IconViewStore)
+        self.up_button.set_sensitive(self.Path != '/')
+    def home_clicked(self, item, IconViewStore):
+        self.Path = GLib.get_home_dir()
+        self.Load(IconViewStore)
+        self.up_button.set_sensitive(True)
+    def double_click(self, IconView, tree_path, IconViewStore):
+        print tree_path
+        iter_ = IconViewStore.get_iter(tree_path)
+        (path, is_dir) = IconViewStore.get(iter_, self.COL_PATH, self.COL_IS_DIRECTORY)
+        print path, is_dir
+        if (is_dir is True) : self.ArrayNextBack.append(path)
+        print self.ArrayNextBack
+        if not is_dir:
+            return
+        self.Path = path
+        self.Headerbar.props.title = self.Path
+
+        IconViewStore.clear()
+        self.Load(IconViewStore)
+        self.up_button.set_sensitive(True)
+
+
+
+
+
+    def Load(self, IconViewStore):
+        for FileName in os.listdir(self.Path):
+            IconViewStore.append(
+            (os.path.join(self.Path, FileName), 
+                FileName, 
+                self.FileIcon(os.path.join(self.Path, FileName)
+                    ),
+                os.path.isdir(os.path.join(self.Path, FileName)
+                    )
+                )
+            )
+    def FileIcon(self, path):
+        fileicon = None
+        giopath = Gio.file_new_for_path(path)
+        query = giopath.query_info(Gio.FILE_ATTRIBUTE_STANDARD_ICON,
+            Gio.FileQueryInfoFlags.NONE,
+                    None)
+        geticonnames = query.get_icon().get_names()
+        icontheme = Gtk.IconTheme.get_default()
+        for icon in geticonnames:
             try:
-                pixbuf = Gtk.IconTheme.get_default().load_icon(dict[ic]['icon'], 48, 0)
-                self.liststore.append([pixbuf, dict[ic]['label']])
-            except:
+                fileicon = icontheme.load_icon(icon, 64, 0)
+                break
+            except GLib.GError:
                 pass
-    def press(self, iconview, tree_path, liststore):
-        index = self.iconview.get_selected_items()[0]
-        print index, 'press'
+        return fileicon
 
-    def item_activated(self, iconview, tree_path, liststore):
-        global select_item_value
-        index = self.iconview.get_selected_items()[0]
-        gg = str(index)
-        kk = int(gg)
-        self.liststore.clear()
-        if os.path.isdir(fm[kk]['path']) is True:
-            #if fm[kk]['path'] not in nextback:
-            nextback.append(fm[kk]['path'])
-            print nextback
-            select_item_value = fm[kk]['path']
-            self.hb.props.title = select_item_value
-            if len(nextback) > 0 : self.Geri.set_sensitive(True)
-            folder(fm[kk]['path'])
-            print fm
-            ic = [ic for ic in fm.keys()]
-            for ic in ic:
-                try:
-                    pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 48, 0)
-                    self.liststore.append([pixbuf, fm[ic]['label']])
-                except:
-                    pixbuf = Gtk.IconTheme.get_default().load_icon('error', 48, 0)
-                    self.liststore.append([pixbuf, fm[ic]['label']])
-        else:
-            print ('ha ne oluyor')
-
-    def connect_NExt(self, iconview, tree_path, liststore):
-        global select_item_value
-        if os.path.isdir(nextback[nextback.index(select_item_value)+1]) is True:
-            self.liststore.clear()
-            folder(nextback[nextback.index(select_item_value)+1])
-            select_item_value = nextback[nextback.index(select_item_value)+1]
-            self.hb.props.title = select_item_value
-            if nextback.index(select_item_value) is 0: self.Geri.set_sensitive(False)
-            if nextback.index(select_item_value) is len(nextback)-1: 
-                self.Ileri.set_sensitive(False)
-            if nextback.index(select_item_value) > 0: 
-                self.Geri.set_sensitive(True)
-            ic = [ic for ic in fm.keys()]
-            for ic in ic:
-                try:
-                    pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 48, 0)
-                    self.liststore.append([pixbuf, fm[ic]['label']])
-                except:
-                    pass
-    def connect_BAck(self, iconview, tree_path, liststore):
-        global select_item_value
-        if os.path.isdir(nextback[nextback.index(select_item_value)-1]) is True:
-            self.liststore.clear()
-            folder(nextback[nextback.index(select_item_value)-1])
-            select_item_value = nextback[nextback.index(select_item_value)-1]
-            self.hb.props.title = select_item_value
-            if nextback.index(select_item_value) is 0: self.Geri.set_sensitive(False)
-            if nextback.index(select_item_value) < len(nextback)-1: 
-                self.Ileri.set_sensitive(True)
-            ic = [ic for ic in fm.keys()]
-            for ic in ic:
-                try:
-                    pixbuf = Gtk.IconTheme.get_default().load_icon(fm[ic]['icon'], 48, 0)
-                    self.liststore.append([pixbuf, fm[ic]['label']])
-                except:
-                    pass
-def main(beta=None):
-    IconViewWindow(beta)
+def main(BetaApp=None):
+    BetaFileManager(BetaApp)
     Gtk.main()
 
 if __name__ == '__main__':
