@@ -7,14 +7,19 @@ from gi.repository import GdkPixbuf, GLib
 import subprocess
 HOME = os.environ['HOME']
 pdict = {}
-pdict['Evdizini'] = {'path':HOME, 'icon':'gtk-home'}
+pdict['Home'] = {'path':HOME, 'icon':'gtk-quit'}
 pdict['Çöp'] = {'path':'rash://', 'icon':'gtk-home'}
+pdict['Root'] = {'path':'/', 'icon':'gtk-home'}
 def tempread():
-    with open('/tmp/_filemanager_py_mt_nr.star') as temp:
-        star = temp.read()
+    global star
+    try:
+        with open(HOME+'/.config/_filemanager_py_mt_nr.star') as temp:
+            star = temp.read()
+    except:
+        tempwrite(HOME)
     return star
 def tempwrite(path):
-    with open('/tmp/_filemanager_py_mt_nr.star', 'w') as temp:
+    with open(HOME+'/.config/_filemanager_py_mt_nr.star', 'w') as temp:
         temp.write(path)
 def places():
     with open(HOME+'/.config/user-dirs.dirs') as pla:
@@ -62,6 +67,8 @@ class BetaFileManager(Gtk.Window):
         self.Ileri.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
         self.HeaderBox.add(self.Ileri)
         self.Headerbar.pack_start(self.HeaderBox)
+        #
+        self.runrun()
         #formbox
         self.FormBox = Gtk.Box(homogeneous=False, spacing=5)
         self.window.add(self.FormBox)
@@ -69,8 +76,9 @@ class BetaFileManager(Gtk.Window):
         self.placesstore = Gtk.ListStore(str, str)
         self.placestitle = Gtk.TreeViewColumn('')
         self.placestreeview = Gtk.TreeView(self.placesstore)
+
         for addplaces in places().keys():
-            self.placesstore.append([addplaces+' '*27, pdict[addplaces]['icon']])
+            self.placesstore.append([addplaces+' '*30, pdict[addplaces]['icon']])
         self.placestreeview.append_column(self.placestitle)
         self.CellIcon = Gtk.CellRendererPixbuf()
         self.CellText = Gtk.CellRendererText()
@@ -97,16 +105,12 @@ class BetaFileManager(Gtk.Window):
         IconView = Gtk.IconView(model=IconViewStore)
         IconView.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         self.ScrolledWindow.add(IconView)
-        #self.up_button = up_button
-        #self.home_button = home_button
-        #up_button.connect('clicked', self.up_clicked, IconViewStore)
-        #home_button.connect('clicked', self.home_clicked, IconViewStore)
         IconView.set_text_column(self.FILENAME)
         IconView.set_pixbuf_column(self.FILEICON)
         IconView.set_item_width(self.IconWidth)
         IconView.grab_focus()
         IconView.connect('item-activated', self.double_click, IconViewStore)
-        self.ToggleButton.connect("toggled", self.on_button_toggled,IconViewStore, '1')
+        #self.ToggleButton.connect("toggled", self.on_button_toggled,IconViewStore, '1')
         self.Geri.connect('button-press-event', self.connect_FileBack, IconViewStore) 
         self.Ileri.connect('button-press-event', self.connect_FileNext, IconViewStore) 
         self.placestreeview.connect('button_press_event', self.get_selected_user, IconViewStore)
@@ -115,10 +119,22 @@ class BetaFileManager(Gtk.Window):
         self.Ileri.set_sensitive(False)
         self.window.show_all()
 
+    def runrun(self):
+        for link in self.Path.split('/')[1:]:
+            print link
+            button = Gtk.ToggleButton(link)
+            button.connect("toggled", self.callback, link)
+            button.set_border_width(0)
+            button.show()
+            self.HeaderBox.add(button)
+
+    def callback(self, widget, data=None):
+        print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+        print widget.get_active()
+        index = self.Path.index(widget.get_active())
+        print self.path[0:index]
+
     def get_selected_user(self, widget, tree_path, IconViewStore):  
-
-
-
         SelectItem = self.placestreeview.get_selection()
         (name, value) = SelectItem.get_selected()
         self.SelectPlacesItem = pdict[name.get_value(value, 0).split()[0]]['path']
@@ -126,10 +142,6 @@ class BetaFileManager(Gtk.Window):
         self.Headerbar.props.title = self.Path
         IconViewStore.clear()
         self.Load(IconViewStore)
-
-
-
-
     def on_button_press_event(self, IconViewStore):
         if event.type == Gdk.EventType.BUTTON_PRESS:
             if event.button == 3:
@@ -170,15 +182,6 @@ class BetaFileManager(Gtk.Window):
         IconViewStore.clear()
         self.Load(IconViewStore)
         self.Headerbar.props.title = self.Path
-
-    def up_clicked(self, item, IconViewStore):
-        self.Path = os.path.split(self.Path)[0]
-        self.Load(IconViewStore)
-        self.up_button.set_sensitive(self.Path != '/')
-    def home_clicked(self, item, IconViewStore):
-        self.Path = GLib.get_home_dir()
-        self.Load(IconViewStore)
-        self.up_button.set_sensitive(True)
     def double_click(self, IconView, tree_path, IconViewStore):
         iter_ = IconViewStore.get_iter(tree_path)
         (path, is_dir) = IconViewStore.get(iter_, self.COL_PATH, self.COL_IS_DIRECTORY)
@@ -194,11 +197,11 @@ class BetaFileManager(Gtk.Window):
         self.Headerbar.props.title = self.Path
         IconViewStore.clear()
         self.Load(IconViewStore)
+        self.runrun()
         #self.up_button.set_sensitive(True)
         if len(self.ArrayNextBack) > 1:
             self.Geri.set_sensitive(True
                 )
-
     def Load(self, IconViewStore):
         for FileName in os.listdir(self.Path):
             if FileName.startswith('.') is True and self.state is False:
