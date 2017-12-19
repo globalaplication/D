@@ -129,11 +129,9 @@ class BetaFileManager(Gtk.Window):
             self.HeaderBox.add(button)
 
     def callback(self, widget, data=None):
-        print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
-        print widget.get_active()
-        index = self.Path.index(widget.get_active())
-        print self.path[0:index]
-
+        #print "%s was toggled %s" % (data, ("OFF", "ON")[widget.get_active()])
+        #print widget.get_active()
+        index = widget.get_active()
     def get_selected_user(self, widget, tree_path, IconViewStore):  
         SelectItem = self.placestreeview.get_selection()
         (name, value) = SelectItem.get_selected()
@@ -149,7 +147,7 @@ class BetaFileManager(Gtk.Window):
             elif event.button == 1:
                 print("LEFT CLICK")
     def haha(self, entrysearch):
-        print  self.entrysearch.get_text()
+        print (self.entrysearch.get_text())
     def on_button_toggled(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
