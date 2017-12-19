@@ -6,13 +6,24 @@ from gi.repository import Gtk, Gio, Gdk
 from gi.repository import GdkPixbuf, GLib
 import subprocess
 
+HOME = os.environ['HOME']
+pdict = {}
+
+def places():
+    with open(HOME+'/.config/user-dirs.dirs') as pla:
+        places = pla.read().splitlines()
+    places = [places.replace('"','').split('/')[-1] for places in places if places.startswith('#') is False]
+    for add in places:
+        pdict[add] = {'path':HOME+'/'+add, 'icon':'gtk-home'}
+    return pdict
+
 class BetaFileManager(Gtk.Window):
 
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
 
-    Path = '/home'
-    IconWidth = 70
+    Path = HOME
+    IconWidth = 67
     ArrayNextBack, CountNextBack = [Path], 1
     state = False
 
@@ -50,24 +61,37 @@ class BetaFileManager(Gtk.Window):
         self.Headerbar.pack_start(self.HeaderBox)
 
         #formbox
-        self.FormBox = Gtk.VBox()
+        self.FormBox = Gtk.Box(homogeneous=False, spacing=5)
         self.window.add(self.FormBox)
         #toolbar
-        self.Toolbar = Gtk.Toolbar()
-        self.FormBox.pack_start(self.Toolbar, 0, 0, 0)
-        #toolbar butonlar
-        up_button = Gtk.ToolButton(stock_id=Gtk.STOCK_GO_UP)
-        up_button.set_is_important(True)
-        up_button.set_sensitive(False)
-        self.Toolbar.insert(up_button, -1)
-        home_button = Gtk.ToolButton(stock_id=Gtk.STOCK_HOME)
-        home_button.set_is_important(True)
-        self.Toolbar.insert(home_button, -1)
+
+        self.placesstore = Gtk.ListStore(str, str)
+        self.placestitle = Gtk.TreeViewColumn('')
+        self.placestreeview = Gtk.TreeView(self.placesstore)
+        for addplaces in places().keys():
+  
+            self.placesstore.append([addplaces+' '*27, pdict[addplaces]['icon']])
+        self.placestreeview.append_column(self.placestitle)
+        self.CellIcon = Gtk.CellRendererPixbuf()
+        self.CellText = Gtk.CellRendererText()
+        #self.CellIcon.set_property('cell-background', 'black')
+        #self.CellText.set_property('cell-background', 'black')
+        self.placestitle.pack_start(self.CellIcon, False)
+        self.placestitle.pack_start(self.CellText, True)
+        #places path icon
+        self.placestitle.set_attributes(self.CellIcon, stock_id=1)
+        #places path list
+        self.placestitle.set_attributes(self.CellText, text=0)
+        self.FormBox.add(self.placestreeview)
+
+      
+        #ScrolledWindowİCONVİEW
         self.ScrolledWindow = Gtk.ScrolledWindow()
         self.ScrolledWindow.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
         self.ScrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC,
                       Gtk.PolicyType.AUTOMATIC)
         self.FormBox.pack_start(self.ScrolledWindow, True, True, 1)
+
         #self.Path = '/home/linuxmt'
         IconViewStore = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf, bool)
         self.Load(IconViewStore)
@@ -76,11 +100,11 @@ class BetaFileManager(Gtk.Window):
         IconView.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         self.ScrolledWindow.add(IconView)
         
-        up_button.connect('clicked', self.up_clicked, IconViewStore)
-        home_button.connect('clicked', self.home_clicked, IconViewStore)
+        #self.up_button = up_button
+        #self.home_button = home_button
 
-        self.up_button = up_button
-        self.home_button = home_button
+        #up_button.connect('clicked', self.up_clicked, IconViewStore)
+        #home_button.connect('clicked', self.home_clicked, IconViewStore)
 
         IconView.set_text_column(self.FILENAME)
         IconView.set_pixbuf_column(self.FILEICON)
@@ -91,12 +115,20 @@ class BetaFileManager(Gtk.Window):
         self.ToggleButton.connect("toggled", self.on_button_toggled,IconViewStore, '1')
         self.Geri.connect('button-press-event', self.connect_FileBack, IconViewStore) 
         self.Ileri.connect('button-press-event', self.connect_FileNext, IconViewStore) 
-    
+        #IconView.connect('button-press-event', self.on_button_press_event) 
+
         self.Geri.set_sensitive(False)
         self.Ileri.set_sensitive(False)
 
         self.window.show_all()
 
+
+    def on_button_press_event(self, IconViewStore):
+        if event.type == Gdk.EventType.BUTTON_PRESS:
+            if event.button == 3:
+                print("Right CLick")
+            elif event.button == 1:
+                print("LEFT CLICK")
     def haha(self, entrysearch):
         print  self.entrysearch.get_text()
     def on_button_toggled(self, ToggleButton, IconViewStore, name):
@@ -155,10 +187,11 @@ class BetaFileManager(Gtk.Window):
         IconViewStore.clear()
         self.Load(IconViewStore)
 
-        self.up_button.set_sensitive(True)
+        #self.up_button.set_sensitive(True)
         if len(self.ArrayNextBack) > 1:
             self.Geri.set_sensitive(True
                 )
+
     def Load(self, IconViewStore):
         for FileName in os.listdir(self.Path):
             if FileName.startswith('.') is True and self.state is False:
@@ -190,6 +223,5 @@ class BetaFileManager(Gtk.Window):
 def main(BetaApp=None):
     BetaFileManager(BetaApp)
     Gtk.main()
-
 if __name__ == '__main__':
     main()
