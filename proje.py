@@ -121,7 +121,6 @@ class BetaFileManager(Gtk.Window):
 
     def runrun(self):
         for link in self.Path.split('/')[1:]:
-            print link
             button = Gtk.ToggleButton(link)
             button.connect("toggled", self.callback, link)
             button.set_border_width(0)
