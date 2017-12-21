@@ -211,7 +211,6 @@ class BetaFileManager(Gtk.Window):
         KlavyeButon = Gdk.keyval_name(event.keyval)
         if (KlavyeButon == 'Control_L'): 
             self.CtrL = True
-            print event.button, 'ctrl'
     def on_button_press_event(self, IconView,  event, IconViewStore):
         try:
             if event.type == Gdk.EventType.BUTTON_PRESS:
