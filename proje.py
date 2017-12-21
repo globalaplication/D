@@ -12,7 +12,7 @@ pdict = {}
 pdict['Ev'] = {'path':HOME, 'icon':'gtk-quit'}
 pdict['Rash'] = {'path':'rash://', 'icon':'gtk-home'}
 pdict['Root'] = {'path':'/', 'icon':'gtk-quit'}
-pdict['Diskler'] = {'path':'/media/linuxmt', 'icon':'gtk-quit'}
+pdict['Diskler'] = {'path':'/media', 'icon':'gtk-quit'}
 def tempread():
     global star
     try:
