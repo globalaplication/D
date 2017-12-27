@@ -7,11 +7,10 @@ from gi.repository import GdkPixbuf, GLib
 import subprocess
 HOME = os.environ['HOME']
 filedict = {}
-selectitem = []
 pdict = {}
-pdict['Ev'] = {'path':HOME, 'icon':'gtk-quit', 'main':True}
-pdict['Root'] = {'path':'/', 'icon':'gtk-quit', 'main':True}
-pdict['Diskler'] = {'path':'/media', 'icon':'gtk-quit', 'main':True}
+pdict['Ev'] = {'path':HOME, 'icon':'gtk-home', 'main':True}
+pdict['Root'] = {'path':'/', 'icon':'gtk-home', 'main':True}
+pdict['Diskler'] = {'path':'/media', 'icon':'gtk-home', 'main':True}
 
 def ConfigDeletePlaces(string, NewConfigData=''):
     with open(HOME+'/.config/_filemanager_py_mt_nr.places') as delete:
@@ -61,6 +60,7 @@ class BetaFileManager(Gtk.Window):
     SelectPlacesItemIter = 0
     SelectPlacesItemChangePdict = {}
     DefaultFolder = 'Klasör'
+    IconViewSelectedItem = []
 
     def __init__(self, BetaApp):
         self.window = Gtk.Window()
@@ -77,15 +77,19 @@ class BetaFileManager(Gtk.Window):
         self.menu.show_all()
 
         self.MenuIconView = Gtk.Menu()
-        MenuYeniKlasor = Gtk.MenuItem("Yeni Klasör")
-        MenuYeniKlasor.connect("activate", self.IconViewFonksiyon, 'Yeni Klasör')
-        MenuFolderChange = Gtk.MenuItem("Değiştir")
-        MenuFolderChange.connect("activate", self.IconViewFonksiyon, 'Değiştir')
+
+        MenuIconViewYeniKlasor = Gtk.MenuItem("Yeni Klasör")
+        MenuIconViewYeniKlasor.connect("activate", self.IconViewFonksiyon, 'Yeni Klasör')
+
+        MenuIconViewDelete = Gtk.MenuItem("Sil")
+        MenuIconViewDelete.connect("activate", self.IconViewFonksiyon, 'Sil')
+
         MenuIconViewFolderAddPlaces = Gtk.MenuItem("Konuma Ekle ")
         MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
+
         self.MenuIconView.append(MenuIconViewFolderAddPlaces)
-        self.MenuIconView.append(MenuYeniKlasor)
-        self.MenuIconView.append(MenuFolderChange)
+        self.MenuIconView.append(MenuIconViewYeniKlasor)
+        self.MenuIconView.append(MenuIconViewDelete)
         self.MenuIconView.show_all()
 
         #Gtk HeaderBar
@@ -119,10 +123,11 @@ class BetaFileManager(Gtk.Window):
         self.HeaderBox.add(self.Ileri)
         self.Headerbar.pack_start(self.HeaderBox)
 
-        self.entrysearch = Gtk.Entry()
-        self.entrysearch.set_width_chars(40)
-        self.entrysearch.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,'system-search-symbolic')
-        self.Headerbar.pack_end(self.entrysearch)
+        self.GoEntry = Gtk.Entry()
+        self.GoEntry.set_width_chars(40)
+        self.GoEntry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,'system-search-symbolic')
+        self.GoEntry.connect("changed", self.ChangedGoEntry)
+        self.Headerbar.pack_end(self.GoEntry)
     
         self.FormBox = Gtk.Box(homogeneous=False, spacing=4)
         self.window.add(self.FormBox)
@@ -131,7 +136,7 @@ class BetaFileManager(Gtk.Window):
         for addplaces in LoadPlaces().keys():
             self.PlacesStore.append([addplaces, pdict[addplaces]['icon']])
         self.PlacesTreeView = Gtk.TreeView(self.PlacesStore)
-        self.PlacesColumn = Gtk.TreeViewColumn('Konumlar'+' '*30)
+        self.PlacesColumn = Gtk.TreeViewColumn('Konumlar'+' '*40)
         self.PlacesTreeView.append_column(self.PlacesColumn)
         self.CellIcon = Gtk.CellRendererPixbuf()
         self.CellText = Gtk.CellRendererText()
@@ -142,10 +147,7 @@ class BetaFileManager(Gtk.Window):
         self.PlacesColumn.set_attributes(self.CellText, text=0)
         self.PlacesTreeView.set_activate_on_single_click(True) 
         self.FormBox.add(self.PlacesTreeView)
-
-
-########################################################################################################
-
+#############################################################################
         self.box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         self.FormBox.pack_start(self.box2, 1, 1, 0)
 
@@ -173,10 +175,7 @@ class BetaFileManager(Gtk.Window):
         self.IconView.set_pixbuf_column(self.FILEICON)
         self.IconView.set_item_width(self.IconWidth)
         self.ScrolledWindow.add(self.IconView)
-
-########################################################################################################
-
-
+################################################################################
         self.IconView.grab_focus()
         self.ToggleButton.connect("toggled", self.HideFileShow, self.IconViewStore, '1')
 
@@ -184,7 +183,8 @@ class BetaFileManager(Gtk.Window):
         self.PlacesTreeView.connect('button_press_event', self.LoadPlacesTreeViewSelect, self.IconViewStore)
         self.CellText.connect("edited", self.ChangePlaces)
 
-        self.IconView.connect('button_press_event', self.IconViewSelect, self.IconView)
+        self.IconView.connect('selection-changed', self.IconViewSelect, self.IconView) 
+        self.IconView.connect('button_press_event', self.IconViewSelectPressEvent, self.IconView)
         self.IconView.connect('item-activated', self.IconViewDoubleClick, self.IconViewStore)
 
         self.Geri.connect('button-press-event', self.FileBack, self.IconViewStore) 
@@ -195,11 +195,23 @@ class BetaFileManager(Gtk.Window):
 
         self.window.show_all()
 
+    def ChangedGoEntry(self, GoEntry, say=0):
+        print ('test')
+        #deneme, kk = '', []
+        #path =  self.GoEntry.get_text().split('/')[1:]
+        #path.insert(0, '/')
+        #for aenum, a in enumerate(path, 0):
+        #    deneme = ''
+        #    for b in range(0, aenum+1):
+        #        deneme = deneme +'/'+ path[b]
+        #    kk.append(deneme.replace('//', ''))
+        #kk.insert(1, '/')
+        #self.GoEntry.set_text(kk[1:][-1])
 
     def ConTextMenuIconView(self):
         self.MenuIconView.popup(None, None, None, None, 0, Gtk.get_current_event_time())
 
-    def IconViewSelect(self, IconView, event, IconViewStore):
+    def IconViewSelectPressEvent(self, IconView,  event, IconViewStore):
         if event.type == Gdk.EventType.BUTTON_PRESS:
             self.path = self.IconView.get_path_at_pos(event.x, event.y)
             if self.path != None and event.button == 1: 
@@ -207,10 +219,12 @@ class BetaFileManager(Gtk.Window):
             elif event.button == 3:
                 self.IconView.select_path(self.path)
                 self.ConTextMenuIconView()
+    def IconViewSelect(self, IconView, event, model=None):
+        self.IconViewSelectedItem = IconView.get_selected_items()
     def IconViewFonksiyon(self, PlacesTreeView, data = None):
         selection = self.PlacesTreeView.get_selection()
         (model, iter) = selection.get_selected()
-        if data == 'Yeni Klasör':
+        if (data == 'Yeni Klasör'):
             for id in range(1, 111):
                 Error = os.path.isdir(self.Path +'/'+ self.DefaultFolder + str(id))
                 if (Error is True):
@@ -233,6 +247,12 @@ class BetaFileManager(Gtk.Window):
             self.PlacesStore.append([keys, 'gtk-home'])
             pdict[keys] = {'path':path, 'icon':'gtk-home', 'main':'False'}
             ConfigAddPlaces(path,keys,'gtk-home','False')
+        if (data == 'Sil'):
+            for delete in self.IconViewSelectedItem:
+                if filedict[int(str(delete))]['isdir'] is True:
+                    os.system('rm -r '+filedict[int(str(delete))]['file']) #klasor
+                else: os.system('rm -f '+filedict[int(str(delete))]['file'])
+                self.IconViewStore.remove(self.IconViewStore.get_iter(delete))
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
@@ -261,6 +281,7 @@ class BetaFileManager(Gtk.Window):
         elif (data == 'Değiştir'):
             self.CellText.set_property("editable", True)
             self.SelectPlacesItemChangePdict = pdict[model[iter][0]]
+
     def PlacesTreeViewSelect(self, PlacesTreeView, Event, PlacesStore):
         if Event.button == 3:
             pthinfo = self.PlacesTreeView.get_path_at_pos(Event.x, Event.y)
@@ -338,12 +359,13 @@ class BetaFileManager(Gtk.Window):
                 )
     def LoadIconView(self, IconViewStore, indextest=0): 
         #self.Headerbar.props.title = self.Path
-        self.entrysearch.set_text(self.Path)
+        self.GoEntry.set_text(self.Path)
         for enum, FileName in enumerate(os.listdir(self.Path),0):
             if FileName.startswith('.') is True and self.state is False:
                     indextest = indextest + 1
                     continue
-            filedict[enum-indextest] = {'file':self.Path+'/'+FileName}
+            filedict[enum-indextest] = {'file':self.Path+'/'+FileName, 
+                    'isdir':os.path.isdir(os.path.join(self.Path, FileName))}
             self.IconViewStore.append(
             (os.path.join(self.Path, FileName), 
                 FileName, 
