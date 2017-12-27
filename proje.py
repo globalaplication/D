@@ -110,11 +110,11 @@ class BetaFileManager(Gtk.Window):
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.ButtonAdd.add(image)
         self.Headerbar.pack_end(self.ButtonAdd)
-
-
         #Sol tarfataki butonlar
         self.HeaderBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(self.HeaderBox.get_style_context(), "linked")
+        self.spinner = Gtk.Spinner()
+        self.HeaderBox.add(self.spinner)
         self.Geri = Gtk.Button()
         self.Geri.add(Gtk.Arrow(Gtk.ArrowType.LEFT, Gtk.ShadowType.NONE))
         self.HeaderBox.add(self.Geri)
@@ -122,16 +122,15 @@ class BetaFileManager(Gtk.Window):
         self.Ileri.add(Gtk.Arrow(Gtk.ArrowType.RIGHT, Gtk.ShadowType.NONE))
         self.HeaderBox.add(self.Ileri)
         self.Headerbar.pack_start(self.HeaderBox)
-
+        #sağ taraftaki butonlar
         self.GoEntry = Gtk.Entry()
         self.GoEntry.set_width_chars(40)
         self.GoEntry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,'system-search-symbolic')
         self.GoEntry.connect("changed", self.ChangedGoEntry)
         self.Headerbar.pack_end(self.GoEntry)
     
-        self.FormBox = Gtk.Box(homogeneous=False, spacing=4)
+        self.FormBox = Gtk.Box(homogeneous=False, spacing=5)
         self.window.add(self.FormBox)
-
         self.PlacesStore = Gtk.ListStore(str, str)
         for addplaces in LoadPlaces().keys():
             self.PlacesStore.append([addplaces, pdict[addplaces]['icon']])
@@ -153,14 +152,11 @@ class BetaFileManager(Gtk.Window):
 
         self.HeaderBar2 = Gtk.HeaderBar()
         #self.box2.add(self.HeaderBar2)
-
         self.ToggleButton = Gtk.ToggleButton()
         icon = Gio.ThemedIcon(name="gtk-stop")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.ToggleButton.add(image)
         self.HeaderBar2.pack_start(self.ToggleButton)
-
-
         self.ScrolledWindow = Gtk.ScrolledWindow()
         self.ScrolledWindow.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
         self.ScrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC,
@@ -210,7 +206,6 @@ class BetaFileManager(Gtk.Window):
 
     def ConTextMenuIconView(self):
         self.MenuIconView.popup(None, None, None, None, 0, Gtk.get_current_event_time())
-
     def IconViewSelectPressEvent(self, IconView,  event, IconViewStore):
         if event.type == Gdk.EventType.BUTTON_PRESS:
             self.path = self.IconView.get_path_at_pos(event.x, event.y)
@@ -249,10 +244,19 @@ class BetaFileManager(Gtk.Window):
             ConfigAddPlaces(path,keys,'gtk-home','False')
         if (data == 'Sil'):
             for delete in self.IconViewSelectedItem:
+                self.spinner.start()
                 if filedict[int(str(delete))]['isdir'] is True:
                     os.system('rm -r '+filedict[int(str(delete))]['file']) #klasor
                 else: os.system('rm -f '+filedict[int(str(delete))]['file'])
                 self.IconViewStore.remove(self.IconViewStore.get_iter(delete))
+                #print (len(filedict), filedict)
+                for test in range(int(str(delete)), len(filedict)):
+                    if test is not len(filedict)-1:
+                        filedict[test] = filedict[test+1]
+                    else:
+                        filedict.pop(test)
+            #print (filedict)
+            self.spinner.stop()
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
