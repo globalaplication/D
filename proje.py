@@ -81,6 +81,9 @@ class BetaFileManager(Gtk.Window):
         MenuYeniKlasor.connect("activate", self.IconViewFonksiyon, 'Yeni Klasör')
         MenuFolderChange = Gtk.MenuItem("Değiştir")
         MenuFolderChange.connect("activate", self.IconViewFonksiyon, 'Değiştir')
+        MenuIconViewFolderAddPlaces = Gtk.MenuItem("Konuma Ekle ")
+        MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
+        self.MenuIconView.append(MenuIconViewFolderAddPlaces)
         self.MenuIconView.append(MenuYeniKlasor)
         self.MenuIconView.append(MenuFolderChange)
         self.MenuIconView.show_all()
@@ -174,6 +177,7 @@ class BetaFileManager(Gtk.Window):
 ########################################################################################################
 
 
+        self.IconView.grab_focus()
         self.ToggleButton.connect("toggled", self.HideFileShow, self.IconViewStore, '1')
 
         self.PlacesTreeView.connect('button_press_event', self.PlacesTreeViewSelect, self.PlacesTreeView)
@@ -191,17 +195,18 @@ class BetaFileManager(Gtk.Window):
 
         self.window.show_all()
 
-    def IconViewSelect(self, IconView, event, IconViewStore):
-        try:
-            if event.type == Gdk.EventType.BUTTON_PRESS:
-                path = self.IconView.get_path_at_pos(event.x, event.y)
-                if path != None and event.button == 1: 
-                    print path
-                elif event.button == 3:
-                    self.IconView.select_path(path)
-        except:
-            self.MenuIconView.popup(None, None, None, None, 0, Gtk.get_current_event_time())
 
+    def ConTextMenuIconView(self):
+        self.MenuIconView.popup(None, None, None, None, 0, Gtk.get_current_event_time())
+
+    def IconViewSelect(self, IconView, event, IconViewStore):
+        if event.type == Gdk.EventType.BUTTON_PRESS:
+            self.path = self.IconView.get_path_at_pos(event.x, event.y)
+            if self.path != None and event.button == 1: 
+                print self.path
+            elif event.button == 3:
+                self.IconView.select_path(self.path)
+                self.ConTextMenuIconView()
     def IconViewFonksiyon(self, PlacesTreeView, data = None):
         selection = self.PlacesTreeView.get_selection()
         (model, iter) = selection.get_selected()
@@ -222,6 +227,12 @@ class BetaFileManager(Gtk.Window):
                         )
                     )
                     break
+        if (data == 'Konuma Ekle'):
+            keys = os.path.split ( filedict [ int(str(self.path)) ]['file'] )[1]
+            path = filedict [ int(str(self.path)) ]['file']
+            self.PlacesStore.append([keys, 'gtk-home'])
+            pdict[keys] = {'path':path, 'icon':'gtk-home', 'main':'False'}
+            ConfigAddPlaces(path,keys,'gtk-home','False')
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
