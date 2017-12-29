@@ -49,7 +49,6 @@ def LoadPlaces():
         pdict[add.split(',')[1]] = {'path':add.split(',')[0], 'icon':add.split(',')[2], 'main':add.split(',')[3]}
     #print (pdict)
     return pdict
-
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
@@ -80,55 +79,42 @@ class BetaFileManager(Gtk.Window):
         self.menu.append(MenuKonumlarDegistir)
         self.menu.append(MenuKonumlarSil)
         self.menu.show_all()
-
         self.MenuIconView = Gtk.Menu()
-
         self.MenuIconViewCopy = Gtk.MenuItem("Kopyala")
         self.MenuIconViewCopy.connect("activate", self.IconViewFonksiyon, 'Kopyala')
-
         self.MenuIconViewCut = Gtk.MenuItem("Taşı")
         self.MenuIconViewCut.connect("activate", self.IconViewFonksiyon, 'Taşı')
-
         self.MenuIconViewYeniKlasor = Gtk.MenuItem("Yeni Klasör")
         self.MenuIconViewYeniKlasor.connect("activate", self.IconViewFonksiyon, 'Yeni Klasör')
-
         self.MenuIconViewDelete = Gtk.MenuItem("Sil")
         self.MenuIconViewDelete.connect("activate", self.IconViewFonksiyon, 'Sil')
-
         self.MenuIconViewFolderAddPlaces = Gtk.MenuItem("Konuma Ekle ")
         self.MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
-
         self.MenuIconViewChanged = Gtk.MenuItem("Yeniden Adlandır")
         self.MenuIconViewChanged.connect("activate", self.IconViewFonksiyon, 'Yeniden Adlandır')
-
         self.MenuIconView.append(self.MenuIconViewCopy)
         self.MenuIconView.append(self.MenuIconViewCut)
         self.MenuIconView.append(self.MenuIconViewFolderAddPlaces)
         self.MenuIconView.append(self.MenuIconViewYeniKlasor)
         self.MenuIconView.append(self.MenuIconViewDelete)
         self.MenuIconView.append(self.MenuIconViewChanged)
-
         self.MenuIconView.show_all()
-
         #Gtk HeaderBar
         self.Headerbar = Gtk.HeaderBar()
         self.Headerbar.set_show_close_button(True)
         #self.Headerbar.props.title = self.Path
         self.window.set_titlebar(self.Headerbar)
-
         #sağ taraf buton
         self.ToggleButton = Gtk.ToggleButton()
         icon = Gio.ThemedIcon(name="gtk-execute")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.ToggleButton.add(image)
         self.Headerbar.pack_end(self.ToggleButton)
-
         #self.ButtonAdd = Gtk.Button()
         #icon = Gio.ThemedIcon(name="gtk-home")
         #image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         #self.ButtonAdd.add(image)
         #self.Headerbar.pack_end(self.ButtonAdd)
-
         #Sol tarfataki butonlar
         self.HeaderBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(self.HeaderBox.get_style_context(), "linked")
@@ -147,7 +133,6 @@ class BetaFileManager(Gtk.Window):
         self.GoEntry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,'gtk-apply')
         self.GoEntry.connect("changed", self.ChangedGoEntry)
         self.Headerbar.pack_end(self.GoEntry)
-    
         self.FormBox = Gtk.Box(homogeneous=False, spacing=0)
         self.window.add(self.FormBox)
         self.PlacesStore = Gtk.ListStore(str, str)
@@ -173,8 +158,6 @@ class BetaFileManager(Gtk.Window):
         #self.CellText.props.weight = Pango.WEIGHT_NORMAL=545 #WEIGHT_BOLD=700
         #self.CellText.props.weight = Pango.Weight.BOLD
         #self.CellText.props.wrap_width = 70  
-        #https://developer.gnome.org/gnome-devel-demos/stable/treeview_simple_liststore.py.html.en
-        #http://webcache.googleusercontent.com/search?q=cache:8G6ln95VnosJ:https://www.programcreek.com/python/example/821/gtk.ListStore&num=1&hl=tr&gl=tr&strip=1&vwsrc=0
         #self.CellText.set_property("editable", True)
         self.PlacesColumn.pack_start(self.CellIcon, False)
         self.PlacesColumn.pack_start(self.CellText, True)
@@ -182,7 +165,7 @@ class BetaFileManager(Gtk.Window):
         self.PlacesColumn.set_attributes(self.CellText, text=0)
         self.PlacesTreeView.set_activate_on_single_click(True) 
         self.FormBox.add(self.PlacesTreeView)
-#############################################################################
+#
         self.box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.FormBox.pack_start(self.box2, 1, 1, 0)
 
@@ -228,7 +211,7 @@ class BetaFileManager(Gtk.Window):
         #self.IconView.set_valign(1)
         #self.IconView.set_visible(1)
         self.ScrolledWindow.add(self.IconView)
-################################################################################
+#
         self.IconView.grab_focus()
         self.ToggleButton.connect("toggled", self.HideFileShow, self.IconViewStore, '1')
         self.PlacesTreeView.connect('button_press_event', self.PlacesTreeViewSelect, self.PlacesTreeView)
@@ -329,7 +312,6 @@ class BetaFileManager(Gtk.Window):
         if (data == 'Kopyala'):
             print ('kopyalama işlemi', self.IconViewSelectedItem)
             #self.MenuIconViewChanged.set_sensitive(False)
-
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
