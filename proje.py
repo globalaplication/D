@@ -47,7 +47,7 @@ def LoadPlaces():
         places = pla.read().splitlines()
     for add in places:
         pdict[add.split(',')[1]] = {'path':add.split(',')[0], 'icon':add.split(',')[2], 'main':add.split(',')[3]}
-    print pdict
+    #print (pdict)
     return pdict
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
@@ -70,7 +70,6 @@ class BetaFileManager(Gtk.Window):
         self.window = Gtk.Window()
         self.window.set_default_size(960, 700)
         self.window.connect('destroy', Gtk.main_quit)
-
         self.menu = Gtk.Menu()
         MenuKonumlarSil = Gtk.MenuItem("Sil")
         MenuKonumlarSil.connect("activate", self.PlacesTreeViewFonksiyon, 'Sil')
@@ -79,41 +78,42 @@ class BetaFileManager(Gtk.Window):
         self.menu.append(MenuKonumlarDegistir)
         self.menu.append(MenuKonumlarSil)
         self.menu.show_all()
-
         self.MenuIconView = Gtk.Menu()
-        MenuIconViewYeniKlasor = Gtk.MenuItem("Yeni Klasör")
-        MenuIconViewYeniKlasor.connect("activate", self.IconViewFonksiyon, 'Yeni Klasör')
-        MenuIconViewDelete = Gtk.MenuItem("Sil")
-        MenuIconViewDelete.connect("activate", self.IconViewFonksiyon, 'Sil')
-        MenuIconViewFolderAddPlaces = Gtk.MenuItem("Konuma Ekle ")
-        MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
-        MenuIconViewChanged = Gtk.MenuItem("Yeniden Adlandır")
-        MenuIconViewChanged.connect("activate", self.IconViewFonksiyon, 'Yeniden Adlandır')
-        self.MenuIconView.append(MenuIconViewFolderAddPlaces)
-        self.MenuIconView.append(MenuIconViewYeniKlasor)
-        self.MenuIconView.append(MenuIconViewDelete)
-        self.MenuIconView.append(MenuIconViewChanged)
+        self.MenuIconViewCopy = Gtk.MenuItem("Kopyala")
+        self.MenuIconViewCopy.connect("activate", self.IconViewFonksiyon, 'Kopyala')
+        self.MenuIconViewCut = Gtk.MenuItem("Taşı")
+        self.MenuIconViewCut.connect("activate", self.IconViewFonksiyon, 'Taşı')
+        self.MenuIconViewYeniKlasor = Gtk.MenuItem("Yeni Klasör")
+        self.MenuIconViewYeniKlasor.connect("activate", self.IconViewFonksiyon, 'Yeni Klasör')
+        self.MenuIconViewDelete = Gtk.MenuItem("Sil")
+        self.MenuIconViewDelete.connect("activate", self.IconViewFonksiyon, 'Sil')
+        self.MenuIconViewFolderAddPlaces = Gtk.MenuItem("Konuma Ekle ")
+        self.MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
+        self.MenuIconViewChanged = Gtk.MenuItem("Yeniden Adlandır")
+        self.MenuIconViewChanged.connect("activate", self.IconViewFonksiyon, 'Yeniden Adlandır')
+        self.MenuIconView.append(self.MenuIconViewCopy)
+        self.MenuIconView.append(self.MenuIconViewCut)
+        self.MenuIconView.append(self.MenuIconViewFolderAddPlaces)
+        self.MenuIconView.append(self.MenuIconViewYeniKlasor)
+        self.MenuIconView.append(self.MenuIconViewDelete)
+        self.MenuIconView.append(self.MenuIconViewChanged)
         self.MenuIconView.show_all()
-
         #Gtk HeaderBar
         self.Headerbar = Gtk.HeaderBar()
         self.Headerbar.set_show_close_button(True)
         #self.Headerbar.props.title = self.Path
         self.window.set_titlebar(self.Headerbar)
-
         #sağ taraf buton
         self.ToggleButton = Gtk.ToggleButton()
         icon = Gio.ThemedIcon(name="gtk-execute")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.ToggleButton.add(image)
         self.Headerbar.pack_end(self.ToggleButton)
-
         #self.ButtonAdd = Gtk.Button()
         #icon = Gio.ThemedIcon(name="gtk-home")
         #image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         #self.ButtonAdd.add(image)
         #self.Headerbar.pack_end(self.ButtonAdd)
-
         #Sol tarfataki butonlar
         self.HeaderBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(self.HeaderBox.get_style_context(), "linked")
@@ -132,7 +132,6 @@ class BetaFileManager(Gtk.Window):
         self.GoEntry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,'gtk-apply')
         self.GoEntry.connect("changed", self.ChangedGoEntry)
         self.Headerbar.pack_end(self.GoEntry)
-    
         self.FormBox = Gtk.Box(homogeneous=False, spacing=0)
         self.window.add(self.FormBox)
         self.PlacesStore = Gtk.ListStore(str, str)
@@ -170,28 +169,23 @@ class BetaFileManager(Gtk.Window):
 #############################################################################
         self.box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.FormBox.pack_start(self.box2, 1, 1, 0)
-
         #self.HeaderBar2 = Gtk.HeaderBar()
         #self.box2.add(self.HeaderBar2)
-
         mb = Gtk.MenuBar()
         filemenu = Gtk.Menu()
         self.filem = Gtk.MenuItem()
         mb.append(self.filem)
         self.box2.add(mb)
-
         #self.ToggleButton = Gtk.ToggleButton()
         #icon = Gio.ThemedIcon(name="gtk-stop")
         #image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         #self.ToggleButton.add(image)
         #self.HeaderBar2.pack_start(self.ToggleButton)
-
         self.ScrolledWindow = Gtk.ScrolledWindow()
         self.ScrolledWindow.set_shadow_type(Gtk.ShadowType.ETCHED_IN)
         self.ScrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC,
                       Gtk.PolicyType.AUTOMATIC)
         self.box2.pack_end(self.ScrolledWindow, 1, 1, 0)
-
         self.IconViewStore = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf, bool)
         self.LoadIconView(self.IconViewStore)
         self.IconView = Gtk.IconView(model=self.IconViewStore)
@@ -213,8 +207,6 @@ class BetaFileManager(Gtk.Window):
         #self.IconView.set_valign(1)
         #self.IconView.set_visible(1)
         self.ScrolledWindow.add(self.IconView)
-
-
 ################################################################################
         self.IconView.grab_focus()
         self.ToggleButton.connect("toggled", self.HideFileShow, self.IconViewStore, '1')
@@ -238,18 +230,32 @@ class BetaFileManager(Gtk.Window):
             if event.type == Gdk.EventType.BUTTON_PRESS:
                 self.path = self.IconView.get_path_at_pos(event.x, event.y)
                 if self.path != None and event.button == 1: 
-                    print self.path
+                    print (self.path)
                 elif event.button == 3:
                     isdir = os.path.isdir(os.path.join(self.Path, filedict [ int(str(self.path)) ]['file']))
                     self.SelectIconViewIsdir = isdir
                     self.IconView.select_path(self.path)
-
                     self.ConTextMenuIconView()
+                    self.MenuIconViewChanged.set_sensitive(True)
+                    self.MenuIconViewDelete.set_sensitive(True)
+                    self.MenuIconViewCut.set_sensitive(True)
+                    self.MenuIconViewCopy.set_sensitive(True)
+                    self.MenuIconViewYeniKlasor.set_sensitive(False)
+                    if (self.SelectIconViewIsdir is True):
+                        self.MenuIconViewFolderAddPlaces.set_sensitive(True)
+                    else:
+                        self.MenuIconViewFolderAddPlaces.set_sensitive(False)
         except:
             self.ConTextMenuIconView()
+            self.MenuIconViewChanged.set_sensitive(False)
+            self.MenuIconViewDelete.set_sensitive(False)
+            self.MenuIconViewCut.set_sensitive(False)
+            self.MenuIconViewCopy.set_sensitive(False)
+            self.MenuIconViewYeniKlasor.set_sensitive(True)
+            self.MenuIconViewFolderAddPlaces.set_sensitive(False)
     def IconViewSelect(self, IconView, event, model=None):
         self.IconViewSelectedItem = IconView.get_selected_items()
-        print filedict
+        print (filedict)
     def IconViewFonksiyon(self, PlacesTreeView, data = None):
         selection = self.PlacesTreeView.get_selection()
         (model, iter) = selection.get_selected()
@@ -295,6 +301,9 @@ class BetaFileManager(Gtk.Window):
                     else:
                         filedict.pop(test)
             self.spinner.stop()
+        if (data == 'Kopyala'):
+            print ('kopyalama işlemi', self.IconViewSelectedItem)
+            #self.MenuIconViewChanged.set_sensitive(False)
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
@@ -351,7 +360,7 @@ class BetaFileManager(Gtk.Window):
             self.Geri.set_sensitive(True)
             self.ArrayNextBack.append(self.Path)
             self.CountNextBack = self.CountNextBack + 1
-            print self.ArrayNextBack
+            #print (self.ArrayNextBack)
             self.IconViewStore.clear()
             self.LoadIconView(self.IconViewStore)
     def FileBack(self, IconView, path, IconViewStore):
