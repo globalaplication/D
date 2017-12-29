@@ -12,9 +12,9 @@ DefaultPlaces = HOME+'/.config/user-dirs.dirs'
 LastSelect = HOME+'/.config/_filemanager_py_mt_nr.star'
 filedict = {}
 pdict = {}
+pdict['Diskler'] = {'path':'/media', 'icon':'gtk-home', 'main':True}
 pdict['Ev'] = {'path':HOME, 'icon':'gtk-home', 'main':True}
 pdict['Root'] = {'path':'/', 'icon':'gtk-home', 'main':True}
-pdict['Diskler'] = {'path':'/media', 'icon':'gtk-home', 'main':True}
 def ConfigDeletePlaces(string, NewConfigData=''):
     with open(PlacesSource) as delete:
         test = delete.read()
@@ -46,9 +46,12 @@ def LoadPlaces():
     with open(PlacesSource) as pla:
         places = pla.read().splitlines()
     for add in places:
-        pdict[add.split(',')[1]] = {'path':add.split(',')[0], 'icon':add.split(',')[2], 'main':add.split(',')[3]}
+        pdict[add.split(',')[1]] = {'path':add.split(',')[0], 
+        'icon':add.split(',')[2], 
+                                    'main':add.split(',')[3]}
     #print (pdict)
     return pdict
+
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
@@ -66,6 +69,8 @@ class BetaFileManager(Gtk.Window):
     CountText = 0
     CountHideFile = 0
     SelectIconViewIsdir = False
+    ExtendSelectIconViewIndex = []
+
     def __init__(self, BetaApp):
         self.window = Gtk.Window()
         self.window.set_default_size(960, 700)
@@ -80,23 +85,32 @@ class BetaFileManager(Gtk.Window):
         self.menu.append(MenuKonumlarSil)
         self.menu.show_all()
         self.MenuIconView = Gtk.Menu()
+
         self.MenuIconViewCopy = Gtk.MenuItem("Kopyala")
         self.MenuIconViewCopy.connect("activate", self.IconViewFonksiyon, 'Kopyala')
+        #self.MenuIconViewCopy.connect("activate", self.on_folder_clicked)
+
         self.MenuIconViewCut = Gtk.MenuItem("Taşı")
         self.MenuIconViewCut.connect("activate", self.IconViewFonksiyon, 'Taşı')
+        self.MenuIconViewPaste = Gtk.MenuItem("Yapıştır")
+        self.MenuIconViewPaste.connect("activate", self.IconViewFonksiyon, 'Yapıştır')
         self.MenuIconViewYeniKlasor = Gtk.MenuItem("Yeni Klasör")
         self.MenuIconViewYeniKlasor.connect("activate", self.IconViewFonksiyon, 'Yeni Klasör')
         self.MenuIconViewDelete = Gtk.MenuItem("Sil")
         self.MenuIconViewDelete.connect("activate", self.IconViewFonksiyon, 'Sil')
+        self.MenuIconViewCopeTasi = Gtk.MenuItem("Çöp Kutusuna Taşı")
+        self.MenuIconViewCopeTasi.connect("activate", self.PlacesTreeViewFonksiyon, 'Çöp Kutusuna Taşı')
         self.MenuIconViewFolderAddPlaces = Gtk.MenuItem("Konuma Ekle ")
         self.MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
         self.MenuIconViewChanged = Gtk.MenuItem("Yeniden Adlandır")
         self.MenuIconViewChanged.connect("activate", self.IconViewFonksiyon, 'Yeniden Adlandır')
         self.MenuIconView.append(self.MenuIconViewCopy)
         self.MenuIconView.append(self.MenuIconViewCut)
+        self.MenuIconView.append(self.MenuIconViewPaste)
         self.MenuIconView.append(self.MenuIconViewFolderAddPlaces)
         self.MenuIconView.append(self.MenuIconViewYeniKlasor)
         self.MenuIconView.append(self.MenuIconViewDelete)
+        self.MenuIconView.append(self.MenuIconViewCopeTasi)
         self.MenuIconView.append(self.MenuIconViewChanged)
         self.MenuIconView.show_all()
         #Gtk HeaderBar
@@ -104,18 +118,28 @@ class BetaFileManager(Gtk.Window):
         self.Headerbar.set_show_close_button(True)
         #self.Headerbar.props.title = self.Path
         self.window.set_titlebar(self.Headerbar)
+
         #sağ taraf buton
+        self.BlueToothButton = Gtk.ToggleButton()
+        icon = Gio.ThemedIcon(name="gtk-floppy")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.BlueToothButton.add(image)
+        self.BlueToothButton.connect('clicked', self.test)
+        self.Headerbar.pack_end(self.BlueToothButton)
+
         self.ToggleButton = Gtk.ToggleButton()
-        icon = Gio.ThemedIcon(name="gtk-execute")
+        icon = Gio.ThemedIcon(name="gtk-stop")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.ToggleButton.add(image)
         self.Headerbar.pack_end(self.ToggleButton)
+
         #self.ButtonAdd = Gtk.Button()
         #icon = Gio.ThemedIcon(name="gtk-home")
         #image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         #self.ButtonAdd.add(image)
         #self.Headerbar.pack_end(self.ButtonAdd)
         #Sol tarfataki butonlar
+
         self.HeaderBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(self.HeaderBox.get_style_context(), "linked")
         self.spinner = Gtk.Spinner()
@@ -139,7 +163,7 @@ class BetaFileManager(Gtk.Window):
         for addplaces in LoadPlaces().keys():
             self.PlacesStore.append([addplaces, pdict[addplaces]['icon']])
         self.PlacesTreeView = Gtk.TreeView(self.PlacesStore)
-        self.PlacesColumn = Gtk.TreeViewColumn('Konumlar'+' '*40)
+        self.PlacesColumn = Gtk.TreeViewColumn('Konumlar'+' '*45)
         self.PlacesTreeView.append_column(self.PlacesColumn)
         self.CellIcon = Gtk.CellRendererPixbuf()
         self.CellText = Gtk.CellRendererText()
@@ -225,8 +249,13 @@ class BetaFileManager(Gtk.Window):
         self.Geri.set_sensitive(False)
         self.Ileri.set_sensitive(False)
         self.window.show_all()
+
+    def test(self, BlueToothButton):
+        print self.ExtendSelectIconViewIndex
+
     def ChangedGoEntry(self, GoEntry, say=0):
         print ('test')
+
     def ConTextMenuIconView(self):
         self.MenuIconView.popup(None, None, None, None, 0, Gtk.get_current_event_time())
     def IconViewSelectPressEvent(self, IconView,  event, IconViewStore):
@@ -234,35 +263,56 @@ class BetaFileManager(Gtk.Window):
             if event.type == Gdk.EventType.BUTTON_PRESS:
                 self.path = self.IconView.get_path_at_pos(event.x, event.y)
                 if self.path != None and event.button == 1: 
-                    print (self.path)
-                elif event.button == 3:
+                    print (self.path, 'self')
+                elif (event.button == 3):
                     isdir = os.path.isdir(os.path.join(self.Path, filedict [ int(str(self.path)) ]['file']))
                     self.SelectIconViewIsdir = isdir
                     self.IconView.select_path(self.path)
                     self.ConTextMenuIconView()
-                    if (self.SelectIconViewIsdir is True):
+                    if (self.IconViewSelectedItem > 0):
                         self.IconViewContextMenuEnabled([(self.MenuIconViewChanged, True), 
-                        (self.MenuIconViewDelete, True),(self.MenuIconViewCut, True),
+                        (self.MenuIconViewDelete, True),(self.MenuIconViewCopeTasi, True), 
+                        (self.MenuIconViewCut, True),(self.MenuIconViewPaste, False),
                         (self.MenuIconViewCopy,True), (self.MenuIconViewYeniKlasor,False), 
                         (self.MenuIconViewFolderAddPlaces,True)])
                     else:
                         self.IconViewContextMenuEnabled([(self.MenuIconViewChanged, True), 
-                        (self.MenuIconViewDelete, True),(self.MenuIconViewCut, True),
-                        (self.MenuIconViewCopy,True), 
+                        (self.MenuIconViewDelete, True),(self.MenuIconViewCopeTasi, True),
+                        (self.MenuIconViewCut, True),
+                        (self.MenuIconViewCopy,True), (self.MenuIconViewPaste, False)
                         (self.MenuIconViewYeniKlasor,False), 
                         (self.MenuIconViewFolderAddPlaces,False)])
         except:
             self.ConTextMenuIconView()
-            self.IconViewContextMenuEnabled([(self.MenuIconViewChanged, False), 
-            (self.MenuIconViewDelete, False),(self.MenuIconViewCut, False),
-            (self.MenuIconViewCopy,False), (self.MenuIconViewYeniKlasor,True), 
-            (self.MenuIconViewFolderAddPlaces,False)])
+            if (len(self.ExtendSelectIconViewIndex) is 0):
+                self.IconViewContextMenuEnabled([(self.MenuIconViewChanged, False), 
+                (self.MenuIconViewDelete, False),
+                (self.MenuIconViewCopeTasi, False),
+                (self.MenuIconViewCut, False),
+                (self.MenuIconViewCopy,False), 
+                (self.MenuIconViewPaste, False),
+                (self.MenuIconViewYeniKlasor,True),
+                (self.MenuIconViewFolderAddPlaces,False)])
+            else:
+                self.IconViewContextMenuEnabled([(self.MenuIconViewChanged, False), 
+                (self.MenuIconViewDelete, False),
+                (self.MenuIconViewCopeTasi, False),
+                (self.MenuIconViewCut, False),
+                (self.MenuIconViewCopy,False), 
+                (self.MenuIconViewPaste, True),
+                (self.MenuIconViewYeniKlasor,True),
+                (self.MenuIconViewFolderAddPlaces,False)])
     def IconViewContextMenuEnabled(self, menuitem):
         for enabled in menuitem:
-            print enabled[0].set_sensitive(enabled[1])
+            enabled[0].set_sensitive(enabled[1])
     def IconViewSelect(self, IconView, event, model=None):
         self.IconViewSelectedItem = IconView.get_selected_items()
-        print (filedict)
+        if (len(self.IconViewSelectedItem) is 0):
+            info = str(self.CountFolder)+' Dizin, '+str(self.CountText)+' Dosya, '+str(self.CountHideFile)+' Gizli'
+            self.StatusBarInfo(info) 
+        else:
+            string = str(len(self.IconViewSelectedItem)) + ' Dosya seçildi'
+            self.StatusBarInfo(string)
     def IconViewFonksiyon(self, PlacesTreeView, data = None):
         selection = self.PlacesTreeView.get_selection()
         (model, iter) = selection.get_selected()
@@ -311,7 +361,23 @@ class BetaFileManager(Gtk.Window):
 
         if (data == 'Kopyala'):
             print ('kopyalama işlemi', self.IconViewSelectedItem)
-            #self.MenuIconViewChanged.set_sensitive(False)
+            self.ExtendSelectIconViewIndex = []
+            for test in self.IconViewSelectedItem:
+                print self.ExtendSelectIconViewIndex.extend(test)
+
+        if (data == 'Taşı'):
+            print ('taşıma işlemi', self.IconViewSelectedItem)
+            self.ExtendSelectIconViewIndex = []
+            for test in self.IconViewSelectedItem:
+                print self.ExtendSelectIconViewIndex.extend(test)
+
+        if (data == 'Yapıştır'):
+            print ('yapıştır.')
+            for pastefile in self.ExtendSelectIconViewIndex:
+                print pastefile
+
+                #self.StatusBarInfo(filedict[int(str(pastefile))]['file'])
+
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
