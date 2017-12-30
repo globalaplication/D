@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import gi, os
+import gi, os, copy
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, Gdk
 from gi.repository import GdkPixbuf, GLib
@@ -51,32 +51,23 @@ def LoadPlaces():
                                     'main':add.split(',')[3]}
     #print (pdict)
     return pdict
-
-
-def FFList(path):
-    dir_list = [path]
-    test = []
-    for path in dir_list:
-        list = os.listdir(path)
-        select = [path+'/'+select for select in list if os.path.isdir(path+'/'+select) is True]
-        dir_list.extend(select)
-    for file in dir_list:
-        alo = os.listdir(file)
-        for lan in alo:
-            if  (os.path.isdir(file+'/'+lan) is False):
-                test.append( file+'/'+lan)
-    dir_list.extend(test)
-    for set in dir_list:
-        yield set
-
-def CopyCutF(hedef, fflist, fcopy):
-    for file in fflist:
+def fflist(path):
+    dir = [path]
+    for j in dir:
+        yield [j]
+        if os.path.isdir(j) is True:
+            for k in os.listdir(j):
+                dir.extend([j+'/'+k])
+def CopyCutF(hedef, path):
+    for enum, file in enumerate (fflist(path), 0):
         copyfile = ''
-        test =  hedef + file[file.find(fcopy.split('/')[-1])-1:]
+        if (enum is 0):
+            p = copy.copy(file[0].split('/')[-1])
+        test = hedef+'/'+str(file[0][file[0].find(p):])
         for split in test.split('/')[0:-1]:
             copyfile = copyfile + split + '/'
-        os.system('cp -avr ' + file + chr(32) + copyfile)
-
+        os.system('cp -avr ' + file[0] + ' ' + copyfile)
+    yield None
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
@@ -95,7 +86,6 @@ class BetaFileManager(Gtk.Window):
     CountHideFile = 0
     SelectIconViewIsdir = False
     ExtendSelectIconViewIndex = []
-
     def __init__(self, BetaApp):
         self.window = Gtk.Window()
         self.window.set_default_size(960, 700)
@@ -274,15 +264,12 @@ class BetaFileManager(Gtk.Window):
         self.Geri.set_sensitive(False)
         self.Ileri.set_sensitive(False)
         self.window.show_all()
-
     def test(self, BlueToothButton):
         for j in self.ExtendSelectIconViewIndex:
-            print FFList(filedict[int(str(j))]['file'])
-
-
+            for test in CopyCutF(self.Path, filedict[int(str(j))]['file']):
+                print test
     def ChangedGoEntry(self, GoEntry, say=0):
         print ('test')
-
     def ConTextMenuIconView(self):
         self.MenuIconView.popup(None, None, None, None, 0, Gtk.get_current_event_time())
     def IconViewSelectPressEvent(self, IconView,  event, IconViewStore):
@@ -399,12 +386,9 @@ class BetaFileManager(Gtk.Window):
                 print self.ExtendSelectIconViewIndex.extend(test)
 
         if (data == 'Yapıştır'):
-            print ('yapıştır.')
             for j in self.ExtendSelectIconViewIndex:
-                if (filedict[int(str(j))]['isdir'] is True):
-                    for kopyala in FFList(filedict[int(str(j))]['file']):
-                        CopyCutF(self.Path, FFList(filedict[int(str(j))]['file']), 
-                    FFList(filedict[int(str(j))]['file'])[0])
+                for test in CopyCutF(self.Path, filedict[int(str(j))]['file']):
+                    print test
 
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
