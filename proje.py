@@ -52,6 +52,31 @@ def LoadPlaces():
     #print (pdict)
     return pdict
 
+
+def FFList(path):
+    dir_list = [path]
+    test = []
+    for path in dir_list:
+        list = os.listdir(path)
+        select = [path+'/'+select for select in list if os.path.isdir(path+'/'+select) is True]
+        dir_list.extend(select)
+    for file in dir_list:
+        alo = os.listdir(file)
+        for lan in alo:
+            if  (os.path.isdir(file+'/'+lan) is False):
+                test.append( file+'/'+lan)
+    dir_list.extend(test)
+    for set in dir_list:
+        yield set
+
+def CopyCutF(hedef, fflist, fcopy):
+    for file in fflist:
+        copyfile = ''
+        test =  hedef + file[file.find(fcopy.split('/')[-1])-1:]
+        for split in test.split('/')[0:-1]:
+            copyfile = copyfile + split + '/'
+        os.system('cp -avr ' + file + chr(32) + copyfile)
+
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
@@ -251,7 +276,9 @@ class BetaFileManager(Gtk.Window):
         self.window.show_all()
 
     def test(self, BlueToothButton):
-        print self.ExtendSelectIconViewIndex
+        for j in self.ExtendSelectIconViewIndex:
+            print FFList(filedict[int(str(j))]['file'])
+
 
     def ChangedGoEntry(self, GoEntry, say=0):
         print ('test')
@@ -373,10 +400,11 @@ class BetaFileManager(Gtk.Window):
 
         if (data == 'Yapıştır'):
             print ('yapıştır.')
-            for pastefile in self.ExtendSelectIconViewIndex:
-                print pastefile
-
-                #self.StatusBarInfo(filedict[int(str(pastefile))]['file'])
+            for j in self.ExtendSelectIconViewIndex:
+                if (filedict[int(str(j))]['isdir'] is True):
+                    for kopyala in FFList(filedict[int(str(j))]['file']):
+                        CopyCutF(self.Path, FFList(filedict[int(str(j))]['file']), 
+                    FFList(filedict[int(str(j))]['file'])[0])
 
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
