@@ -13,6 +13,7 @@ LastSelect = HOME+'/.config/_filemanager_py_mt_nr.star'
 filedict = {}
 pdict = {}
 pdict['Diskler'] = {'path':'/media', 'icon':'gtk-home', 'main':True}
+pdict['Rash'] = {'path':HOME+'/.local/share/Trash/files/', 'icon':'gtk-quit', 'main':True}
 pdict['Ev'] = {'path':HOME, 'icon':'gtk-home', 'main':True}
 pdict['Root'] = {'path':'/', 'icon':'gtk-home', 'main':True}
 def ConfigDeletePlaces(string, NewConfigData=''):
@@ -49,7 +50,6 @@ def LoadPlaces():
         pdict[add.split(',')[1]] = {'path':add.split(',')[0], 
         'icon':add.split(',')[2], 
                                     'main':add.split(',')[3]}
-    #print (pdict)
     return pdict
 class Child(Gtk.Window):
     def __init__(self):
@@ -91,9 +91,10 @@ class BetaFileManager(Gtk.Window):
     CountHideFile = 0
     SelectIconViewIsdir = False
     ExtendSelectIconViewIndex = []
+    RashPath = '~/.local/share/Trash/files/'
     def __init__(self, BetaApp):
         self.window = Gtk.Window()
-        self.window.set_default_size(960, 700)
+        self.window.set_default_size(960, 600)
         self.window.connect('destroy', Gtk.main_quit)
 
         self.menu = Gtk.Menu()
@@ -119,7 +120,7 @@ class BetaFileManager(Gtk.Window):
         self.MenuIconViewDelete = Gtk.MenuItem("Sil")
         self.MenuIconViewDelete.connect("activate", self.IconViewFonksiyon, 'Sil')
         self.MenuIconViewCopeTasi = Gtk.MenuItem("Çöp Kutusuna Taşı")
-        self.MenuIconViewCopeTasi.connect("activate", self.PlacesTreeViewFonksiyon, 'Çöp Kutusuna Taşı')
+        self.MenuIconViewCopeTasi.connect("activate", self.IconViewFonksiyon, 'Çöp Kutusuna Taşı')
         self.MenuIconViewFolderAddPlaces = Gtk.MenuItem("Konuma Ekle ")
         self.MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
         self.MenuIconViewChanged = Gtk.MenuItem("Yeniden Adlandır")
@@ -176,14 +177,14 @@ class BetaFileManager(Gtk.Window):
         self.GoEntry.set_width_chars(50)
         self.GoEntry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY,'gtk-apply')
         self.GoEntry.connect("changed", self.ChangedGoEntry)
-        self.Headerbar.pack_end(self.GoEntry)
+        #self.Headerbar.pack_end(self.GoEntry)
         self.FormBox = Gtk.Box(homogeneous=False, spacing=0)
         self.window.add(self.FormBox)
         self.PlacesStore = Gtk.ListStore(str, str)
         for addplaces in LoadPlaces().keys():
             self.PlacesStore.append([addplaces, pdict[addplaces]['icon']])
         self.PlacesTreeView = Gtk.TreeView(self.PlacesStore)
-        self.PlacesColumn = Gtk.TreeViewColumn('Konumlar'+' '*45)
+        self.PlacesColumn = Gtk.TreeViewColumn('Konumlar'+' '*25)
         self.PlacesTreeView.append_column(self.PlacesColumn)
         self.CellIcon = Gtk.CellRendererPixbuf()
         self.CellText = Gtk.CellRendererText()
@@ -371,35 +372,36 @@ class BetaFileManager(Gtk.Window):
                 self.spinner.start()
                 if filedict[int(str(delete))]['isdir'] is True:
                     self.Info = os.system('rm -r '+filedict[int(str(delete))]['file'].replace(' ', '\ ')) #klasor
-                else: self.Info = os.system('rm -f '+filedict[int(str(delete))]['file'].replace(' ', '\ '))
+                    self.CountFolder = self.CountFolder -1
+                else: 
+                    self.Info = os.system('rm -f '+filedict[int(str(delete))]['file'].replace(' ', '\ '))
+                    self.CountText = self.CountText -1
                 self.IconViewStore.remove(self.IconViewStore.get_iter(delete))
-                #print (len(filedict), filedict)
                 for test in range(int(str(delete)), len(filedict)):
                     if test is not len(filedict)-1:
                         filedict[test] = filedict[test+1]
                     else:
                         filedict.pop(test)
+            info = str(self.CountFolder)+' Dizin, '+str(self.CountText)+' Dosya, '+str(self.CountHideFile)+' Gizli'
+            self.StatusBarInfo(info) 
             self.spinner.stop()
-
+        if (data == 'Çöp Kutusuna Taşı'):
+            print ('ok rash')
         if (data == 'Kopyala'):
             print ('kopyalama işlemi', self.IconViewSelectedItem)
             self.ExtendSelectIconViewIndex = []
             for test in self.IconViewSelectedItem:
                 print self.ExtendSelectIconViewIndex.extend(test)
-
         if (data == 'Taşı'):
             print ('taşıma işlemi', self.IconViewSelectedItem)
             self.ExtendSelectIconViewIndex = []
             for test in self.IconViewSelectedItem:
                 print self.ExtendSelectIconViewIndex.extend(test)
-
         if (data == 'Yapıştır'):
             c = Child()
             for j in self.ExtendSelectIconViewIndex:
                 for test in c.CopyCutF(self.Path, filedict[int(str(j))]['file']):
                     print test
-
-
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
@@ -459,6 +461,8 @@ class BetaFileManager(Gtk.Window):
             #print (self.ArrayNextBack)
             self.IconViewStore.clear()
             self.LoadIconView(self.IconViewStore)
+            if (self.Path == HOME+'/.local/share/Trash/files/'):
+                self.GoEntry.set_text('Rash://')
     def FileBack(self, IconView, path, IconViewStore):
         if self.CountNextBack > 1: self.CountNextBack = self.CountNextBack - 1
         if self.CountNextBack is 1 :             
@@ -507,6 +511,8 @@ class BetaFileManager(Gtk.Window):
         self.CountFolder, self.CountText, self.CountHideFile = 0, 0, 0
         self.GoEntry.set_text(self.Path)
         try:
+            if (self.Path == HOME+'/.local/share/Trash/files/'):
+                self.GoEntry.set_text('Rash://')
             for enum, FileName in enumerate(os.listdir(self.Path),0):
                 if FileName.startswith('.') is True and self.state is False:
                         indextest = indextest + 1
@@ -554,11 +560,8 @@ class BetaFileManager(Gtk.Window):
             except GLib.GError:
                 pass
         return fileicon
-
 def main(BetaApp=None):
     BetaFileManager(BetaApp)
-    Child()
     Gtk.main()
-
 if __name__ == '__main__':
     main()
