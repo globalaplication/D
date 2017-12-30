@@ -51,23 +51,32 @@ def LoadPlaces():
                                     'main':add.split(',')[3]}
     #print (pdict)
     return pdict
-def fflist(path):
-    dir = [path]
-    for j in dir:
-        yield [j]
-        if os.path.isdir(j) is True:
-            for k in os.listdir(j):
-                dir.extend([j+'/'+k])
-def CopyCutF(hedef, path):
-    for enum, file in enumerate (fflist(path), 0):
-        copyfile = ''
-        if (enum is 0):
-            p = copy.copy(file[0].split('/')[-1])
-        test = hedef+'/'+str(file[0][file[0].find(p):])
-        for split in test.split('/')[0:-1]:
-            copyfile = copyfile + split + '/'
-        os.system('cp -avr ' + file[0] + ' ' + copyfile)
-    yield None
+
+class Child:
+    def __init__(self):
+        self.window = Gtk.Window()
+        self.window.set_default_size(200, 300)
+        self.window.connect('destroy', Gtk.main_quit)
+        self.window.show_all()
+
+    def fflist(self, path):
+        dir = [path]
+        for j in dir:
+            yield [j]
+            if os.path.isdir(j) is True:
+                for k in os.listdir(j):
+                    dir.extend([j+'/'+k])
+    def CopyCutF(self, hedef, path):
+        for enum, file in enumerate (self.fflist(path), 0):
+            copyfile = ''
+            if (enum is 0):
+                p = copy.copy(file[0].split('/')[-1])
+            test = hedef+'/'+str(file[0][file[0].find(p):])
+            for split in test.split('/')[0:-1]:
+                copyfile = copyfile + split + '/'
+            os.system('cp -avr ' + file[0] + ' ' + copyfile)
+        yield None
+
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
@@ -264,10 +273,13 @@ class BetaFileManager(Gtk.Window):
         self.Geri.set_sensitive(False)
         self.Ileri.set_sensitive(False)
         self.window.show_all()
+
     def test(self, BlueToothButton):
+        c = Child()
         for j in self.ExtendSelectIconViewIndex:
-            for test in CopyCutF(self.Path, filedict[int(str(j))]['file']):
+            for test in c.CopyCutF(self.Path, filedict[int(str(j))]['file']):
                 print test
+
     def ChangedGoEntry(self, GoEntry, say=0):
         print ('test')
     def ConTextMenuIconView(self):
@@ -544,8 +556,10 @@ class BetaFileManager(Gtk.Window):
             except GLib.GError:
                 pass
         return fileicon
+
 def main(BetaApp=None):
     BetaFileManager(BetaApp)
     Gtk.main()
+
 if __name__ == '__main__':
     main()
