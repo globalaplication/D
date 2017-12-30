@@ -51,14 +51,11 @@ def LoadPlaces():
                                     'main':add.split(',')[3]}
     #print (pdict)
     return pdict
-
-class Child:
+class Child(Gtk.Window):
     def __init__(self):
-        self.window = Gtk.Window()
-        self.window.set_default_size(200, 300)
-        self.window.connect('destroy', Gtk.main_quit)
-        self.window.show_all()
-
+        self.window2 = Gtk.Window()
+        self.window2.set_default_size(200, 300)
+        self.window2.show_all()
     def fflist(self, path):
         dir = [path]
         for j in dir:
@@ -76,7 +73,6 @@ class Child:
                 copyfile = copyfile + split + '/'
             os.system('cp -avr ' + file[0] + ' ' + copyfile)
         yield None
-
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
@@ -277,7 +273,7 @@ class BetaFileManager(Gtk.Window):
     def test(self, BlueToothButton):
         c = Child()
         for j in self.ExtendSelectIconViewIndex:
-            for test in c.CopyCutF(self.Path, filedict[int(str(j))]['file']):
+            for test in c.fflist(filedict[int(str(j))]['file']):
                 print test
 
     def ChangedGoEntry(self, GoEntry, say=0):
@@ -398,9 +394,11 @@ class BetaFileManager(Gtk.Window):
                 print self.ExtendSelectIconViewIndex.extend(test)
 
         if (data == 'Yapıştır'):
+            c = Child()
             for j in self.ExtendSelectIconViewIndex:
-                for test in CopyCutF(self.Path, filedict[int(str(j))]['file']):
+                for test in c.CopyCutF(self.Path, filedict[int(str(j))]['file']):
                     print test
+
 
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
@@ -559,6 +557,7 @@ class BetaFileManager(Gtk.Window):
 
 def main(BetaApp=None):
     BetaFileManager(BetaApp)
+    Child()
     Gtk.main()
 
 if __name__ == '__main__':
