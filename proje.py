@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from cc import CopyCut
 import gi, os, copy
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, Gdk
@@ -10,6 +11,7 @@ HOME = os.environ['HOME']
 PlacesSource = HOME+'/.config/_filemanager_py_mt_nr.places'
 DefaultPlaces = HOME+'/.config/user-dirs.dirs'
 LastSelect = HOME+'/.config/_filemanager_py_mt_nr.star'
+BlueToothSelectFiles = HOME+'/config/SendData.blue'
 filedict = {}
 pdict = {}
 pdict['Diskler'] = {'path':'/media', 'icon':'gtk-home', 'main':True}
@@ -51,28 +53,6 @@ def LoadPlaces():
         'icon':add.split(',')[2], 
                                     'main':add.split(',')[3]}
     return pdict
-class Child(Gtk.Window):
-    def __init__(self):
-        self.window2 = Gtk.Window()
-        self.window2.set_default_size(200, 300)
-        self.window2.show_all()
-    def fflist(self, path):
-        dir = [path]
-        for j in dir:
-            yield [j]
-            if os.path.isdir(j) is True:
-                for k in os.listdir(j):
-                    dir.extend([j+'/'+k])
-    def CopyCutF(self, hedef, path):
-        for enum, file in enumerate (self.fflist(path), 0):
-            copyfile = ''
-            if (enum is 0):
-                p = copy.copy(file[0].split('/')[-1])
-            test = hedef+'/'+str(file[0][file[0].find(p):])
-            for split in test.split('/')[0:-1]:
-                copyfile = copyfile + split + '/'
-            os.system('cp -avr ' + file[0] + ' ' + copyfile)
-        yield None
 class BetaFileManager(Gtk.Window):
     (COL_PATH, FILENAME, FILEICON, COL_IS_DIRECTORY,
         NUM_COLS) = range(5)
@@ -91,7 +71,7 @@ class BetaFileManager(Gtk.Window):
     CountHideFile = 0
     SelectIconViewIsdir = False
     ExtendSelectIconViewIndex = []
-    RashPath = '~/.local/share/Trash/files/'
+    RashPath = HOME+'/.local/share/Trash/files/'
     def __init__(self, BetaApp):
         self.window = Gtk.Window()
         self.window.set_default_size(960, 600)
@@ -105,7 +85,11 @@ class BetaFileManager(Gtk.Window):
         self.menu.append(MenuKonumlarDegistir)
         self.menu.append(MenuKonumlarSil)
         self.menu.show_all()
+
         self.MenuIconView = Gtk.Menu()
+
+        self.MenuIconViewSendBlue = Gtk.MenuItem("BlueTooth ile Gönder")
+        self.MenuIconViewSendBlue.connect("activate", self.IconViewFonksiyon, 'BlueTooth ile Gönder')
 
         self.MenuIconViewCopy = Gtk.MenuItem("Kopyala")
         self.MenuIconViewCopy.connect("activate", self.IconViewFonksiyon, 'Kopyala')
@@ -125,6 +109,7 @@ class BetaFileManager(Gtk.Window):
         self.MenuIconViewFolderAddPlaces.connect("activate", self.IconViewFonksiyon, 'Konuma Ekle')
         self.MenuIconViewChanged = Gtk.MenuItem("Yeniden Adlandır")
         self.MenuIconViewChanged.connect("activate", self.IconViewFonksiyon, 'Yeniden Adlandır')
+        self.MenuIconView.append(self.MenuIconViewSendBlue)
         self.MenuIconView.append(self.MenuIconViewCopy)
         self.MenuIconView.append(self.MenuIconViewCut)
         self.MenuIconView.append(self.MenuIconViewPaste)
@@ -181,6 +166,7 @@ class BetaFileManager(Gtk.Window):
         self.FormBox = Gtk.Box(homogeneous=False, spacing=0)
         self.window.add(self.FormBox)
         self.PlacesStore = Gtk.ListStore(str, str)
+        self.PlacesStore.set_sort_column_id(0, Gtk.SortType.ASCENDING)
         for addplaces in LoadPlaces().keys():
             self.PlacesStore.append([addplaces, pdict[addplaces]['icon']])
         self.PlacesTreeView = Gtk.TreeView(self.PlacesStore)
@@ -234,8 +220,8 @@ class BetaFileManager(Gtk.Window):
         self.ScrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC,
                       Gtk.PolicyType.AUTOMATIC)
         self.box2.pack_end(self.ScrolledWindow, 1, 1, 0)
-
         self.IconViewStore = Gtk.ListStore(str, str, GdkPixbuf.Pixbuf, bool)
+        #self.IconViewStore.set_sort_column_id(0, Gtk.SortType.ASCENDING)
         self.LoadIconView(self.IconViewStore)
         self.IconView = Gtk.IconView(model=self.IconViewStore)
         self.IconView.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
@@ -272,11 +258,9 @@ class BetaFileManager(Gtk.Window):
         self.window.show_all()
 
     def test(self, BlueToothButton):
-        c = Child()
-        for j in self.ExtendSelectIconViewIndex:
-            for test in c.fflist(filedict[int(str(j))]['file']):
-                print test
-
+        print ('Test Butonu')
+        c1 = CopyCut('/home/linuxmt/Python', '/home/linuxmt/Test')
+        c1.start()
     def ChangedGoEntry(self, GoEntry, say=0):
         print ('test')
     def ConTextMenuIconView(self):
@@ -325,17 +309,31 @@ class BetaFileManager(Gtk.Window):
                 (self.MenuIconViewPaste, True),
                 (self.MenuIconViewYeniKlasor,True),
                 (self.MenuIconViewFolderAddPlaces,False)])
+
     def IconViewContextMenuEnabled(self, menuitem):
         for enabled in menuitem:
             enabled[0].set_sensitive(enabled[1])
+
+
     def IconViewSelect(self, IconView, event, model=None):
+
         self.IconViewSelectedItem = IconView.get_selected_items()
+
         if (len(self.IconViewSelectedItem) is 0):
             info = str(self.CountFolder)+' Dizin, '+str(self.CountText)+' Dosya, '+str(self.CountHideFile)+' Gizli'
             self.StatusBarInfo(info) 
         else:
             string = str(len(self.IconViewSelectedItem)) + ' Dosya seçildi'
             self.StatusBarInfo(string)
+
+        for test in  self.IconViewSelectedItem:
+
+            print test
+
+
+        print filedict
+
+
     def IconViewFonksiyon(self, PlacesTreeView, data = None):
         selection = self.PlacesTreeView.get_selection()
         (model, iter) = selection.get_selected()
@@ -385,8 +383,12 @@ class BetaFileManager(Gtk.Window):
             info = str(self.CountFolder)+' Dizin, '+str(self.CountText)+' Dosya, '+str(self.CountHideFile)+' Gizli'
             self.StatusBarInfo(info) 
             self.spinner.stop()
+        if (data == 'BlueTooth ile Gönder'):
+            print ('Bluetooth')
         if (data == 'Çöp Kutusuna Taşı'):
-            print ('ok rash')
+            for TrashMove in self.IconViewSelectedItem:
+                os.system('mv '+filedict[int(str(TrashMove))]['file'] +' '+ self.RashPath)
+                self.IconViewStore.remove(self.IconViewStore.get_iter(TrashMove))
         if (data == 'Kopyala'):
             print ('kopyalama işlemi', self.IconViewSelectedItem)
             self.ExtendSelectIconViewIndex = []
@@ -398,10 +400,12 @@ class BetaFileManager(Gtk.Window):
             for test in self.IconViewSelectedItem:
                 print self.ExtendSelectIconViewIndex.extend(test)
         if (data == 'Yapıştır'):
-            c = Child()
             for j in self.ExtendSelectIconViewIndex:
-                for test in c.CopyCutF(self.Path, filedict[int(str(j))]['file']):
-                    print test
+                c1 = CopyCut(filedict[int(str(j))]['file'], self.Path)
+                c1.start()
+
+
+
     def HideFileShow(self, ToggleButton, IconViewStore, name):
         if self.ToggleButton.get_active():
             self.state = True
@@ -488,6 +492,7 @@ class BetaFileManager(Gtk.Window):
         self.LoadIconView(self.IconViewStore)
         #self.Headerbar.props.title = self.Path
         TempWrite(self.Path)
+
     def IconViewDoubleClick(self, IconView, tree_path, IconViewStore):
         iter_ = self.IconViewStore.get_iter(tree_path)
         (path, is_dir) = self.IconViewStore.get(iter_, self.COL_PATH, self.COL_IS_DIRECTORY)
@@ -506,6 +511,7 @@ class BetaFileManager(Gtk.Window):
         if len(self.ArrayNextBack) > 1:
             self.Geri.set_sensitive(True
                 )
+
     def LoadIconView(self, IconViewStore, indextest=0): 
         #self.Headerbar.props.title = self.Path
         self.CountFolder, self.CountText, self.CountHideFile = 0, 0, 0
